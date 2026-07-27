@@ -487,6 +487,63 @@ The pipeline generates a working **Java 17 + Spring Boot 3 + React 18 + TypeScri
 
 ---
 
+## 🎯 Accuracy & Prompt Architecture
+
+### Current Accuracy: ~85–90%
+
+Tested against the Oracle HRMS source (`source/ts-plsql-oracle-forms-hrms`), which contains 30 schema tables, 11 PL/SQL packages (~115 procedures), 6 Oracle Forms, and 24 form triggers.
+
+| Metric | Before (v1) | After (v2) |
+|--------|------------|-----------|
+| Schema coverage | ~60–65% | ~85–90% |
+| PL/SQL packages covered | ~3–4 of 11 | ~10–11 of 11 |
+| Tables documented | ~12–15 of 30 | ~27–30 of 30 |
+| Procedures enumerated | ~30–40% | ~85–90% |
+| Root cause | Turn 1 too vague | Explicit file selection rules |
+
+### What Was Fixed (v2 — July 2026)
+
+**Root cause of v1 low accuracy:** Turn 1 instructions told agents to "request relevant files" without being explicit. For a 30-file schema, Claude would request only 2–3 "representative" files, missing entire domains.
+
+**Fix applied in 4 Python runner files** (`ba_agent1_runner.py`, `da_agent1_runner.py`, `aa_agent1_runner.py`, `ta_agent1_runner.py`) — TURN1_INSTRUCTION now contains explicit rules:
+- "Request ALL .sql, .pks, .pkb, .frmxml files — these are ALL business logic"
+- "Request ALL schema files without exception — if you see 01_*.sql through 04_*.sql, request ALL"
+- "If there are 11 PL/SQL packages, request all 11 .pkb files"
+- "Missing a file is worse than requesting too many"
+
+**Fix applied in 3 prompt files** (`01_BA_Agent1_StructuralScout.md`, `03_DA_Agent1_DataExtractor.md`, `07_AA_Agent1_AppExtractor.md`) — added `# Completeness Rules — MANDATORY` section requiring:
+- Enumerate EVERY entity/table/procedure — never say "and others" or "omitted for brevity"
+- State TOTALS in output header — e.g. "Found: 30 tables, 11 packages, 115 procedures"
+- Extract EXACT threshold values verbatim from source
+- MARK MISSING only when genuinely absent from source
+
+**Fix applied in `foundation_runner.py`** — added 3 rules to synthesis prompt:
+- Mark MISSING only when information genuinely does not appear in layer outputs
+- Enumerate EVERYTHING — every entity with every field, every package with every procedure
+- Extract EXACT business rule values — thresholds, formulas, limits
+
+### The Two-Turn Agent Pattern
+
+Every analysis agent (Steps 4–12) uses a two-turn design that controls accuracy and token cost:
+
+```
+Turn 1 (file selection — controlled by Python runner TURN1_INSTRUCTION)
+  ├── Agent sees: FILE MAP (one line per file) + Layer 1 JSON summary
+  ├── Agent replies: JSON array of files it needs ["schema/01.sql", "plsql/PKG_EMPLOYEE.pkb", ...]
+  └── ACCURACY LEVER: Explicit rules force requesting ALL schema/package/form files
+
+Turn 2 (analysis — controlled by Prompts_Ready_To_Use/*.md)
+  ├── Agent receives: only the deep scan sections for its requested files
+  ├── Agent produces: BA_Structural_Scout.md / DA_Data_Extractor.md / etc.
+  └── QUALITY LEVER: Completeness Rules mandate full enumeration and exact values
+```
+
+**Separation of concerns:**
+- Want more files requested → edit `pipeline/runners/*_runner.py` TURN1_INSTRUCTION
+- Want better output quality → edit `Prompts_Ready_To_Use/*.md` Completeness Rules
+
+---
+
 ## 🛡️ Design Principles
 
 ### Anti-Hallucination

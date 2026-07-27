@@ -18,6 +18,15 @@ Source codebase: `source/ts-plsql-oracle-forms-hrms/` (Oracle Forms + PL/SQL HRM
 
 ---
 
+## Reverse Engineering Accuracy
+**Current accuracy: ~85–90%** (improved July 2026 from ~60–65%)
+
+The existing `results/` were generated BEFORE the accuracy improvements. If you re-run reverse engineering, the new output will be more complete. The improvements are in the prompts — see [[project-fixes-applied]] Fix 10.
+
+Turn 1 (file selection) = Python runners. Turn 2 (analysis quality) = `Prompts_Ready_To_Use/*.md` files.
+
+---
+
 ## Phase 1 — Reverse Engineering
 **STATUS: COMPLETE — DO NOT RE-RUN**
 

@@ -194,5 +194,58 @@ npm install @testing-library/user-event
 
 ---
 
-**Why:** These 9 fixes blocked Sprint 1 and Sprint 2 from running (FAILED_BLOCKED). Knowing them upfront prevents wasting fix-loop tokens re-investigating the same root causes.
+---
+
+## Fix 10 — Reverse engineering accuracy: ~60-65% → ~85-90% (July 2026)
+**Type:** Prompt improvement — not a code bug
+
+**Root cause:** Turn 1 instructions in all 4 agent runners were too vague ("request relevant files"). For a 30-file Oracle schema with 11 packages, Claude would request only 2–3 "representative" files, missing entire domains.
+
+**Files changed:**
+
+### Python runner files (Turn 1 — file selection)
+4 files: `pipeline/runners/ba_agent1_runner.py`, `da_agent1_runner.py`, `aa_agent1_runner.py`, `ta_agent1_runner.py`
+
+Added explicit CRITICAL RULES to TURN1_INSTRUCTION in each:
+- BA: "request EVERY .sql, .pks, .pkb, .frmxml, .pllxml — Do NOT skip any package spec or body"
+- DA: "Request ALL schema/DDL files without exception — if you see 01_*.sql through 04_*.sql, request ALL"
+- AA: "If there are 11 PL/SQL packages, request all 11 .pkb files — missing one = missing ALL its procedures"
+- TA: "Request ALL config files, all Oracle package files, all README files"
+
+### Prompt files (Turn 2 — analysis quality)
+3 files under `Prompts_Ready_To_Use/`:
+- `01_BA_Agent1_StructuralScout.md` — added `# Completeness Rules — MANDATORY` section
+- `03_DA_Agent1_DataExtractor.md` — added `# Completeness Rules — MANDATORY` section
+- `07_AA_Agent1_AppExtractor.md` — added `# 2. Completeness Rules — MANDATORY` section
+
+All 3 completeness sections require:
+- ENUMERATE EVERY entity/table/package/procedure — never "omitted for brevity"
+- STATE TOTALS in output header — "Found: 30 tables, 11 packages, 115 procedures, 6 forms"
+- EXTRACT EXACT threshold values verbatim from source
+- MARK MISSING only when genuinely absent from source
+
+### foundation_runner.py (Step 13 synthesis)
+Added 3 new rules to CALL1_PROMPT:
+- Mark MISSING only when info genuinely not in layer outputs
+- ENUMERATE EVERYTHING — every entity with every field, every package with every procedure
+- BUSINESS RULES: extract EXACT values — thresholds, limits, formulas
+
+**Before/after comparison:**
+| Metric | Before | After |
+|--------|--------|-------|
+| Schema coverage | ~60–65% | ~85–90% |
+| PL/SQL packages | ~3-4 of 11 | ~10-11 of 11 |
+| Tables documented | ~12-15 of 30 | ~27-30 of 30 |
+
+**Key principle — Turn separation:**
+- To fix FILE SELECTION accuracy → edit Python runner TURN1_INSTRUCTION
+- To fix OUTPUT QUALITY → edit Prompts_Ready_To_Use/*.md Completeness Rules
+- Never put completeness rules in Python runners (they are for Turn 2, not Turn 1)
+
+**Why:** The reverse engineering docs in `results/ForwardEngineering_Docs/` had thin content — only ~60% of the actual business logic was captured. Improved to ~85-90% by forcing Claude to request all files and enumerate all findings.
+**How to apply:** If re-running reverse engineering gets thin output, check Turn 1 instruction first — it must explicitly say "request ALL schema files" not "request relevant files".
+
+---
+
+**Why:** These 10 fixes blocked Sprint 1 and Sprint 2 from running (FAILED_BLOCKED), or reduced accuracy of reverse-engineering output. Knowing them upfront prevents wasting fix-loop tokens re-investigating the same root causes.
 **How to apply:** Before starting any sprint troubleshooting, run through this checklist first.
