@@ -24,12 +24,23 @@ Your job: identify ALL business entities, aggregate roots, value objects,
 state machines, domain events, business roles, and the ubiquitous language
 of this codebase.
 
+CRITICAL RULES FOR FILE SELECTION:
+- For PL/SQL / Oracle Forms codebases: request EVERY .sql, .pks, .pkb, .prc,
+  .fnc, .trg, .vw, .frmxml, .pllxml, .mmxml file — these are ALL business logic.
+  Do NOT skip any package spec (.pks) or package body (.pkb) file.
+- For schema/DDL files: request ALL table definition files (schema/*.sql,
+  ddl/*.sql, db/*.sql) — every table file contains business entities.
+- For Java/Spring: request ALL entity classes, service classes, repository interfaces.
+- For .NET: request ALL domain models, services, controllers.
+- When in doubt, include the file — missing a file is worse than requesting too many.
+- You MUST request at minimum: all schema files, all package files, all form files,
+  all trigger files. These are never optional.
+
 Below is the complete FILE MAP of the codebase — one line per file.
-Study your job description, study the file names and summaries, then tell me
-exactly which files you need to read to do your job.
+Study the file names, then request EVERY file relevant to business logic.
 
 Reply with ONLY a valid JSON array of file paths. No explanation. No markdown.
-Example: ["src/Domain/Order.cs", "src/Services/OrderService.cs"]
+Example: ["schema/01_core_tables.sql", "plsql/PKG_EMPLOYEE.pkb", "forms/HRMS_EMPLOYEE.frmxml"]
 
 FILE MAP:
 """
@@ -39,6 +50,18 @@ You are BA Agent 1 — Business Structure Scout.
 
 The file contents you requested are provided below (extracted from the deep scan).
 Now perform your full analysis and produce BA_Structural_Scout.md.
+
+COMPLETENESS RULES — you MUST follow these:
+- List EVERY entity/table found — do not summarise or say "and others".
+- List EVERY business state value verbatim — do not collapse or rename states.
+- List EVERY PL/SQL package procedure that implements business logic.
+- List EVERY Oracle Form as a UI boundary with its triggers and buttons.
+- For business rules: extract the EXACT threshold values, not paraphrases.
+  E.g. "hire_date must be within 180 days" not "hire date validation applies".
+- Mark MISSING only when the information genuinely does not exist in the files —
+  not because it would take effort to extract. If it is in the file, extract it.
+- Count how many entities, states, packages, and procedures you found.
+  State these counts in your output header.
 
 """
 

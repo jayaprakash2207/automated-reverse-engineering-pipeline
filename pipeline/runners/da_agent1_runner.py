@@ -20,12 +20,26 @@ OUTPUT_FILE = "DA_Data_Extractor.md"
 TURN1_INSTRUCTION = """\
 You are DA Agent 1 — Data Extractor.
 
-Your job: extract the complete data model — every entity, EF DbContext,
-repository, migration, query specification, database schema, and data
-relationship in this codebase.
+Your job: extract the COMPLETE data model — every table, every column,
+every relationship, every index, every constraint, every PL/SQL package
+that touches data, and every migration file.
+
+CRITICAL RULES FOR FILE SELECTION:
+- Request ALL schema/DDL files without exception — if you see schema/01_*.sql,
+  schema/02_*.sql, schema/03_*.sql, schema/04_*.sql — request ALL of them.
+  Missing even one schema file means missing entire business domains.
+- For PL/SQL: request ALL .pks and .pkb files — package specs contain procedure
+  signatures, package bodies contain the actual SQL queries and business rules.
+- Request ALL trigger files (.trg, *trigger*.sql) — triggers contain hidden
+  business rules and data integrity constraints.
+- Request ALL view definitions (.vw, *view*.sql) — views expose the logical data model.
+- Request ALL sequence files — sequences reveal ID generation strategy.
+- For ORM codebases: request ALL entity classes, DbContext, migration files.
+- You MUST request every schema file in the codebase — schema files are your
+  PRIMARY source. Do not rely solely on Layer 1 JSON which may be incomplete.
 
 Below is the Layer 1 database summary followed by the complete FILE MAP.
-Tell me exactly which files you need to read to do your job.
+Request EVERY data-related file — schema, packages, triggers, views, sequences.
 
 Reply with ONLY a valid JSON array of file paths. No explanation. No markdown.
 
@@ -36,6 +50,21 @@ You are DA Agent 1 — Data Extractor.
 
 The file contents you requested are provided below (extracted from the deep scan).
 Now perform your full extraction and produce DA_Data_Extractor.md.
+
+COMPLETENESS RULES — you MUST follow these:
+- Extract EVERY table with its FULL column list — column name, data type,
+  nullable, default, constraints. Do not say "columns omitted for brevity".
+- Extract EVERY foreign key relationship with its ON DELETE/UPDATE rule.
+- Extract EVERY index — name, table, columns, unique flag.
+- Extract EVERY sequence with its start value and increment.
+- Extract EVERY view definition.
+- For PL/SQL packages: list EVERY procedure and function that runs SQL —
+  extract the actual SQL query or DML statement, not just the procedure name.
+- For triggers: extract the FULL trigger body — the business rule is IN the body.
+- Count totals: state "X tables, Y columns total, Z foreign keys, N procedures"
+  in your output header. If a count is low (e.g. under 10 tables for a full HRMS),
+  you have missed files — go back and check.
+- NEVER mark a column as UNKNOWN if it is in the schema file you received.
 
 """
 

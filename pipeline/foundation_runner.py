@@ -53,6 +53,17 @@ the first 10 forward-engineering documents.
 6. Record every unresolved question in open_questions with an OQ-### id.
 7. Assumptions that cannot be verified go in assumptions with an ASMP-### id.
 8. The anti-hallucination rule: if you do not know → say unknown, not a guess.
+9. COMPLETENESS RULE: Mark a field MISSING only when the information genuinely
+   does not appear anywhere in the layer outputs. If a table's columns appear in
+   DA Agent output, list ALL of them — do not say "columns omitted for brevity".
+   If a package's procedures appear in AA Agent output, list ALL of them.
+10. ENUMERATE EVERYTHING: For every domain, list every entity with every field.
+    For every package, list every procedure. For every form, list every trigger.
+    The forward engineering agents depend on this output — incomplete data here
+    means incomplete generated code downstream.
+11. BUSINESS RULES: Extract EXACT values — thresholds, limits, formulas.
+    "hire_date must be within 180 days of offer" is a business rule.
+    "hire date validation" is not. Always prefer the specific over the general.
 
 ## Required Output — Part 1
 

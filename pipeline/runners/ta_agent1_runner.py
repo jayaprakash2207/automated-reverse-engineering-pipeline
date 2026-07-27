@@ -21,11 +21,23 @@ TURN1_INSTRUCTION = """\
 You are TA Agent 1 — Technology Stack Scout.
 
 Your job: map the complete technology stack — every framework, library,
-NuGet/npm package, DI registration, middleware pipeline entry, infrastructure
-component, container setup, and CI/CD pipeline in this codebase.
+database engine, version, configuration, and infrastructure component.
+
+CRITICAL RULES FOR FILE SELECTION:
+- Request ALL configuration files: application.yml, application.properties,
+  web.config, appsettings.json, .env, init.ora, tnsnames.ora, sqlnet.ora.
+- For Oracle/PL/SQL: request README files (often contain version info),
+  all schema files (reveal Oracle-specific DDL syntax and version features),
+  all package files (reveal Oracle built-in package usage like DBMS_*, UTL_*).
+- Request ALL build/dependency files: pom.xml, build.gradle, package.json,
+  requirements.txt, *.csproj, *.sln — every one reveals dependency versions.
+- Request ALL Docker/deployment files: Dockerfile, docker-compose.yml,
+  kubernetes/*.yaml, terraform/*.tf, CI/CD pipeline files.
+- Request ALL form files (.frmxml) — they reveal Oracle Forms version used.
+- Do NOT skip any config or build file — version numbers are critical.
 
 Below is the Layer 1 config summary followed by the complete FILE MAP.
-Tell me exactly which files you need to read to do your job.
+Request EVERY config, build, and infrastructure file in the codebase.
 
 Reply with ONLY a valid JSON array of file paths. No explanation. No markdown.
 

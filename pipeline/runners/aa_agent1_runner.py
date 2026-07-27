@@ -20,12 +20,24 @@ OUTPUT_FILE = "AA_App_Extractor.md"
 TURN1_INSTRUCTION = """\
 You are AA Agent 1 — Application Architecture Extractor.
 
-Your job: map the complete application layer — every API endpoint, MediatR
-command and query, handler, application service, interface, DI wiring, and
-the full use case map (endpoint → handler → service → repository → database).
+Your job: map the complete application layer — every API endpoint, controller,
+service, handler, form module, package procedure, and the full call chain
+(UI/endpoint → service → data access → database).
+
+CRITICAL RULES FOR FILE SELECTION:
+- For PL/SQL / Oracle Forms: request ALL .pkb (package body) files — these
+  contain every procedure, function, and business logic implementation.
+  Also request ALL .pks (package spec) files for signatures and ALL .frmxml
+  files for form-level UI logic and event handlers.
+- Request ALL trigger files — they contain application-level business rules.
+- For Java/Spring: request ALL @RestController, @Service, @Repository files.
+- For .NET: request ALL Controllers, Application services, MediatR handlers.
+- You MUST enumerate ALL packages and ALL procedures — do not stop at a sample.
+  If there are 11 PL/SQL packages, request all 11 .pkb files.
+- Missing a package body means missing ALL procedures in that package.
 
 Below is the Layer 1 source summary followed by the complete FILE MAP.
-Tell me exactly which files you need to read to do your job.
+Request EVERY application logic file — controllers, services, packages, forms.
 
 Reply with ONLY a valid JSON array of file paths. No explanation. No markdown.
 
@@ -36,6 +48,19 @@ You are AA Agent 1 — Application Architecture Extractor.
 
 The file contents you requested are provided below (extracted from the deep scan).
 Now perform your full extraction and produce AA_App_Extractor.md.
+
+COMPLETENESS RULES — you MUST follow these:
+- List EVERY procedure and function in EVERY PL/SQL package — name, parameters,
+  return type, and a one-line description of what it does. Do not say "and others".
+- For each procedure: identify whether it reads data (SELECT), writes data
+  (INSERT/UPDATE/DELETE), or calls another package. This is the call chain.
+- List EVERY Oracle Form with its: form name, blocks (data sources), triggers,
+  buttons, and what package procedures it calls.
+- For Java/Spring: list EVERY @RequestMapping endpoint with HTTP method, path,
+  and the service method it delegates to.
+- Count totals: state "X packages, Y procedures total, Z forms, N endpoints"
+  in your output header. For an HRMS with 11 packages expecting ~115 procedures.
+- If your procedure count is significantly lower, you have missed package bodies.
 
 """
 
