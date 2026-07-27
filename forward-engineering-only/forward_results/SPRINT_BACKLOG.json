@@ -1,0 +1,52 @@
+[
+  {
+    "sprint": 1,
+    "name": "Security/Identity Context",
+    "depends_on": [],
+    "rationale": "Every other context relies on it via a Shared Kernel for session/identity; also contains the CRITICAL authentication bypass (no password check) and hard-coded SSN encryption key, which must be fixed before any other context can be considered safe to build on."
+  },
+  {
+    "sprint": 2,
+    "name": "Employee Management Context",
+    "depends_on": [
+      1
+    ],
+    "rationale": "Root aggregate (Employee/EMPLOYEES, EMPLOYEE_HISTORY) supplies master data to Leave, Payroll, and Performance via Customer/Supplier relationships; its broken TRG_EMP_BEFORE_UPDATE trigger (blocks transfer/promote/terminate/rehire) is a hard blocker for any downstream lifecycle-dependent feature and must be resolved right after identity is trustworthy."
+  },
+  {
+    "sprint": 3,
+    "name": "Action Audit Logging (cross-cutting)",
+    "depends_on": [
+      1,
+      2
+    ],
+    "rationale": "PKG_AUDIT.log_action is a cross-cutting concern invoked by security and employee lifecycle operations; it currently swallows constraint-violation errors, so it should be hardened once its two known callers (Security, Employee) are stabilized and before new write-heavy contexts (Leave, Payroll, Performance) start generating audit volume."
+  },
+  {
+    "sprint": 4,
+    "name": "Leave Management Context",
+    "depends_on": [
+      1,
+      2
+    ],
+    "rationale": "Consumes Employee master data and Security sessions; has the most existing (if partial) evidence of any downstream context — submission/self-cancellation already work — and the manager approve/reject gap is a well-defined, high-confidence build target, making it the most tractable next context."
+  },
+  {
+    "sprint": 5,
+    "name": "Payroll Context",
+    "depends_on": [
+      1,
+      2
+    ],
+    "rationale": "Also consumes Employee master data via Customer/Supplier dependency; sequenced after Leave because payroll runs typically need approved leave/attendance data as an input and because Payroll has lower evidence confidence (name only), requiring more discovery work best done after the better-evidenced Leave context is settled."
+  },
+  {
+    "sprint": 6,
+    "name": "Performance Context",
+    "depends_on": [
+      1,
+      2
+    ],
+    "rationale": "Lowest evidence confidence (name only, no table or service evidence) and least time-sensitive value stream (Review Cycle/Individual Review); placed last so discovery and design can draw on patterns and glossary established while building the better-evidenced Leave and Payroll contexts."
+  }
+]

@@ -1,0 +1,66 @@
+[
+  {
+    "sprint": "Security/Identity Context",
+    "issue": "Could not execute tests",
+    "root_cause": "[WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-24T07:53:22.578383+00:00"
+  },
+  {
+    "sprint": "Employee Management Context",
+    "issue": "Could not execute tests",
+    "root_cause": "[WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-24T09:44:22.733640+00:00"
+  },
+  {
+    "sprint": "Action Audit Logging (cross-cutting)",
+    "issue": "Could not execute tests",
+    "root_cause": "[WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-24T10:35:19.984211+00:00"
+  },
+  {
+    "sprint": "Leave Management Context",
+    "issue": "Could not execute tests",
+    "root_cause": "[WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-24T11:03:44.435212+00:00"
+  },
+  {
+    "sprint": "Payroll Context",
+    "issue": "Could not execute tests",
+    "root_cause": "[WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-24T11:21:49.655668+00:00"
+  },
+  {
+    "sprint": "Performance Context",
+    "issue": "Could not execute tests",
+    "root_cause": "[WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-24T12:07:03.920636+00:00"
+  },
+  {
+    "sprint": "Security/Identity Context",
+    "issue": "Could not execute tests",
+    "root_cause": "backend: [WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-25T05:12:49.771598+00:00"
+  },
+  {
+    "sprint": "Employee Management Context",
+    "issue": "Could not execute tests",
+    "root_cause": "backend: [WinError 2] The system cannot find the file specified",
+    "fix_applied": "none — needs environment fix, not a code fix",
+    "outcome": "FAILED_BLOCKED",
+    "timestamp": "2026-07-25T05:40:18.441546+00:00"
+  }
+]
