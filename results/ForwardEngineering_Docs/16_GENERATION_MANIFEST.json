@@ -1,0 +1,94 @@
+```json
+{
+  "manifest_version": "1.0",
+  "generated_by": "Foundation Synthesis Agent",
+  "part": "2 of 2",
+  "source_documents": [
+    "11_API_CONTRACT_SPECIFICATION.md",
+    "12_TECHNOLOGY_BLUEPRINT.md",
+    "13_SECURITY_ARCHITECTURE.md",
+    "14_NFR_SPECIFICATION.md",
+    "15_FORWARD_ENGINEERING_SPECIFICATION.md"
+  ],
+  "target_stack": {
+    "database": "",
+    "backend_language": "",
+    "backend_framework": "",
+    "frontend_framework": "",
+    "deployment_target": "",
+    "ci_cd_platform": "",
+    "secrets_management": "",
+    "message_broker": ""
+  },
+  "domains": [
+    {
+      "id": "VS-01",
+      "name": "Employee Lifecycle",
+      "priority": 1,
+      "generation_status": "SPECIFIED_PARTIAL",
+      "blocking_open_questions": ["OQ-006"],
+      "endpoints": ["GET /employees", "GET /employees/{id}", "POST /employees", "PATCH /employees/{id}", "GET /employees/{id}/history", "POST /employees/{id}/terminate", "POST /employees/{id}/rehire"],
+      "known_defects_to_not_reproduce": ["TD-11", "TD-12"]
+    },
+    {
+      "id": "VS-02",
+      "name": "Leave Request",
+      "priority": 2,
+      "generation_status": "SPECIFIED_PARTIAL",
+      "blocking_open_questions": ["DISC-002"],
+      "endpoints": ["POST /leave-requests", "POST /leave-requests/{id}/cancel", "POST /leave-requests/{id}/approve", "POST /leave-requests/{id}/reject", "GET /leave-requests"],
+      "gap_closures": ["PP-leave-approval-gap"]
+    },
+    {
+      "id": "VS-03",
+      "name": "Pay Period",
+      "priority": 5,
+      "generation_status": "STUB_ONLY",
+      "blocking_open_questions": ["OQ-003", "OQ-006"],
+      "endpoints": ["GET /pay-periods", "GET /pay-periods/{id}"]
+    },
+    {
+      "id": "VS-04",
+      "name": "Payroll Run",
+      "priority": 5,
+      "generation_status": "STUB_ONLY",
+      "blocking_open_questions": ["OQ-003", "OQ-006"],
+      "endpoints": ["POST /payroll-runs", "GET /payroll-runs/{id}"]
+    },
+    {
+      "id": "VS-05",
+      "name": "Review Cycle",
+      "priority": 5,
+      "generation_status": "STUB_ONLY",
+      "blocking_open_questions": ["OQ-003", "OQ-010"],
+      "endpoints": ["GET /review-cycles"]
+    },
+    {
+      "id": "VS-06",
+      "name": "Individual Review",
+      "priority": 5,
+      "generation_status": "STUB_ONLY",
+      "blocking_open_questions": ["OQ-003", "OQ-010"],
+      "endpoints": ["POST /review-cycles/{id}/individual-reviews", "GET /individual-reviews/{id}"]
+    },
+    {
+      "id": "AUTH",
+      "name": "Authentication and Credential Management",
+      "priority": 0,
+      "generation_status": "SPECIFIED_NEW_BUILD",
+      "blocking_open_questions": ["OQ-001"],
+      "endpoints": ["POST /auth/login", "POST /auth/logout", "POST /auth/refresh"],
+      "known_defects_to_not_reproduce": ["PKG-SECURITY-auth-bypass", "PKG-SECURITY-hardcoded-key"]
+    }
+  ],
+  "validation_gates": ["VG-01", "VG-02", "VG-03", "VG-04", "VG-05", "VG-06", "VG-07"],
+  "blocking_open_questions_index": [
+    "OQ-001", "OQ-002", "OQ-003", "OQ-004", "OQ-005", "OQ-006", "OQ-007", "OQ-008", "OQ-009", "OQ-010", "OQ-011", "OQ-012"
+  ],
+  "generation_readiness_summary": {
+    "ready_domains": ["AUTH-foundation-shape", "VS-01-partial", "VS-02-partial"],
+    "blocked_domains": ["VS-03", "VS-04", "VS-05", "VS-06"],
+    "overall_status": "PARTIAL - see 17_FORWARD_ENGINEERING_READINESS_REPORT.md"
+  }
+}
+```

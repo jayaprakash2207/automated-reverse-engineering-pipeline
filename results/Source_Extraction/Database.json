@@ -1,0 +1,3168 @@
+{
+  "tables": [
+    {
+      "name": "DEPARTMENTS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "DEPT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEPT_CODE",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEPT_NAME",
+          "type": "VARCHAR2(100)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PARENT_DEPT_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "COST_CENTER",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MANAGER_EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOCATION_CODE",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.DEPARTMENTS (\n    DEPT_ID              NUMBER(10)      NOT NULL,\n    DEPT_CODE            VARCHAR2(20)    NOT NULL,\n    DEPT_NAME            VARCHAR2(100)   NOT NULL,\n    PARENT_DEPT_ID       NUMBER(10),\n    COST_CENTER          VARCHAR2(20),\n    MANAGER_EMP_ID       NUMBER(10),\n    LOCATION_CODE        VARCHAR2(10),\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_DEPARTMENTS PRIMARY KEY (DEPT_ID),\n    CONSTRAINT UK_DEPT_CODE UNIQUE (DEPT_CODE),\n    CONSTRAINT CHK_DEPT_ACTIVE CHECK (ACTIVE_FLAG IN ('Y', 'N'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "LOCATIONS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "LOCATION_CODE",
+          "type": "VARCHAR2(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOCATION_NAME",
+          "type": "VARCHAR2(100)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ADDRESS_LINE1",
+          "type": "VARCHAR2(200)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ADDRESS_LINE2",
+          "type": "VARCHAR2(200)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CITY",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATE_PROVINCE",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "POSTAL_CODE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "COUNTRY_CODE",
+          "type": "VARCHAR2(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PHONE_NUMBER",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TIMEZONE",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.LOCATIONS (\n    LOCATION_CODE        VARCHAR2(10)    NOT NULL,\n    LOCATION_NAME        VARCHAR2(100)   NOT NULL,\n    ADDRESS_LINE1        VARCHAR2(200),\n    ADDRESS_LINE2        VARCHAR2(200),\n    CITY                 VARCHAR2(100),\n    STATE_PROVINCE       VARCHAR2(100),\n    POSTAL_CODE          VARCHAR2(20),\n    COUNTRY_CODE         VARCHAR2(3),\n    PHONE_NUMBER         VARCHAR2(30),\n    TIMEZONE             VARCHAR2(50)    DEFAULT 'America/New_York',\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_LOCATIONS PRIMARY KEY (LOCATION_CODE)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "JOB_GRADES",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "GRADE_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "GRADE_CODE",
+          "type": "VARCHAR2(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "GRADE_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "MIN_SALARY",
+          "type": "NUMBER(12,2)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "MAX_SALARY",
+          "type": "NUMBER(12,2)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "OVERTIME_ELIGIBLE",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.JOB_GRADES (\n    GRADE_ID             NUMBER(5)       NOT NULL,\n    GRADE_CODE           VARCHAR2(10)    NOT NULL,\n    GRADE_NAME           VARCHAR2(50)    NOT NULL,\n    MIN_SALARY           NUMBER(12,2)    NOT NULL,\n    MAX_SALARY           NUMBER(12,2)    NOT NULL,\n    OVERTIME_ELIGIBLE    CHAR(1)         DEFAULT 'N',\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_JOB_GRADES PRIMARY KEY (GRADE_ID),\n    CONSTRAINT UK_GRADE_CODE UNIQUE (GRADE_CODE),\n    CONSTRAINT CHK_SALARY_RANGE CHECK (MAX_SALARY >= MIN_SALARY)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "JOB_TITLES",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "JOB_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "JOB_CODE",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "JOB_TITLE",
+          "type": "VARCHAR2(100)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "JOB_FAMILY",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "GRADE_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EEO_CATEGORY",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "FLSA_STATUS",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.JOB_TITLES (\n    JOB_ID               NUMBER(10)      NOT NULL,\n    JOB_CODE             VARCHAR2(20)    NOT NULL,\n    JOB_TITLE            VARCHAR2(100)   NOT NULL,\n    JOB_FAMILY           VARCHAR2(50),\n    GRADE_ID             NUMBER(5)       NOT NULL,\n    EEO_CATEGORY         VARCHAR2(10),\n    FLSA_STATUS          VARCHAR2(10)    DEFAULT 'EXEMPT',\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_JOB_TITLES PRIMARY KEY (JOB_ID),\n    CONSTRAINT UK_JOB_CODE UNIQUE (JOB_CODE),\n    CONSTRAINT FK_JOB_GRADE FOREIGN KEY (GRADE_ID) REFERENCES HRMS.JOB_GRADES(GRADE_ID)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "EMPLOYEES",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_NUMBER",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "FIRST_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "MIDDLE_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "LAST_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "DATE_OF_BIRTH",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "GENDER",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MARITAL_STATUS",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NATIONALITY",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SSN_ENCRYPTED",
+          "type": "VARCHAR2(200)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMAIL",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PHONE_WORK",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PHONE_MOBILE",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ADDRESS_LINE1",
+          "type": "VARCHAR2(200)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ADDRESS_LINE2",
+          "type": "VARCHAR2(200)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CITY",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATE_PROVINCE",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "POSTAL_CODE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "COUNTRY_CODE",
+          "type": "VARCHAR2(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "HIRE_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "TERMINATION_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TERMINATION_REASON",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEPT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "JOB_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "MANAGER_EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOCATION_CODE",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMPLOYMENT_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMPLOYMENT_STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PHOTO_BLOB",
+          "type": "BLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NOTES",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.EMPLOYEES (\n    EMP_ID               NUMBER(10)      NOT NULL,\n    EMP_NUMBER           VARCHAR2(20)    NOT NULL,\n    FIRST_NAME           VARCHAR2(50)    NOT NULL,\n    MIDDLE_NAME          VARCHAR2(50),\n    LAST_NAME            VARCHAR2(50)    NOT NULL,\n    DATE_OF_BIRTH        DATE,\n    GENDER               CHAR(1),\n    MARITAL_STATUS       VARCHAR2(10),\n    NATIONALITY          VARCHAR2(50),\n    SSN_ENCRYPTED        VARCHAR2(200),\n    EMAIL                VARCHAR2(100),\n    PHONE_WORK           VARCHAR2(30),\n    PHONE_MOBILE         VARCHAR2(30),\n    ADDRESS_LINE1        VARCHAR2(200),\n    ADDRESS_LINE2        VARCHAR2(200),\n    CITY                 VARCHAR2(100),\n    STATE_PROVINCE       VARCHAR2(100),\n    POSTAL_CODE          VARCHAR2(20),\n    COUNTRY_CODE         VARCHAR2(3),\n    HIRE_DATE            DATE            NOT NULL,\n    TERMINATION_DATE     DATE,\n    TERMINATION_REASON   VARCHAR2(50),\n    DEPT_ID              NUMBER(10)      NOT NULL,\n    JOB_ID               NUMBER(10)      NOT NULL,\n    MANAGER_EMP_ID       NUMBER(10),\n    LOCATION_CODE        VARCHAR2(10),\n    EMPLOYMENT_TYPE      VARCHAR2(20)    DEFAULT 'FULL_TIME',\n    EMPLOYMENT_STATUS    VARCHAR2(20)    DEFAULT 'ACTIVE',\n    PHOTO_BLOB           BLOB,\n    NOTES                CLOB,\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          V",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "EMPLOYEE_HISTORY",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "HIST_ID",
+          "type": "NUMBER(15)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CHANGE_TYPE",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EFFECTIVE_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "OLD_DEPT_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NEW_DEPT_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "OLD_JOB_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NEW_JOB_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "OLD_MANAGER_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NEW_MANAGER_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "OLD_SALARY",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NEW_SALARY",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "OLD_LOCATION",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NEW_LOCATION",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "REASON_CODE",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "COMMENTS",
+          "type": "VARCHAR2(4000)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.EMPLOYEE_HISTORY (\n    HIST_ID              NUMBER(15)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    CHANGE_TYPE          VARCHAR2(30)    NOT NULL,\n    EFFECTIVE_DATE       DATE            NOT NULL,\n    OLD_DEPT_ID          NUMBER(10),\n    NEW_DEPT_ID          NUMBER(10),\n    OLD_JOB_ID           NUMBER(10),\n    NEW_JOB_ID           NUMBER(10),\n    OLD_MANAGER_ID       NUMBER(10),\n    NEW_MANAGER_ID       NUMBER(10),\n    OLD_SALARY           NUMBER(12,2),\n    NEW_SALARY           NUMBER(12,2),\n    OLD_LOCATION         VARCHAR2(10),\n    NEW_LOCATION         VARCHAR2(10),\n    REASON_CODE          VARCHAR2(30),\n    COMMENTS             VARCHAR2(4000),\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_EMP_HISTORY PRIMARY KEY (HIST_ID),\n    CONSTRAINT FK_HIST_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT CHK_CHANGE_TYPE CHECK (CHANGE_TYPE IN (\n        'HIRE', 'TRANSFER', 'PROMOTION', 'DEMOTION', 'SALARY_CHANGE',\n        'TERMINATION', 'REHIRE', 'LEAVE_START', 'LEAVE_END', 'STATUS_CHANGE'\n    ))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "EMPLOYEE_DEPENDENTS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "DEPENDENT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "FIRST_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LAST_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "RELATIONSHIP",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "DATE_OF_BIRTH",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SSN_ENCRYPTED",
+          "type": "VARCHAR2(200)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "BENEFITS_ENROLLED",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.EMPLOYEE_DEPENDENTS (\n    DEPENDENT_ID         NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    FIRST_NAME           VARCHAR2(50)    NOT NULL,\n    LAST_NAME            VARCHAR2(50)    NOT NULL,\n    RELATIONSHIP         VARCHAR2(20)    NOT NULL,\n    DATE_OF_BIRTH        DATE,\n    SSN_ENCRYPTED        VARCHAR2(200),\n    BENEFITS_ENROLLED    CHAR(1)         DEFAULT 'N',\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_EMP_DEPENDENTS PRIMARY KEY (DEPENDENT_ID),\n    CONSTRAINT FK_DEP_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT CHK_RELATIONSHIP CHECK (RELATIONSHIP IN ('SPOUSE', 'CHILD', 'PARENT', 'DOMESTIC_PARTNER', 'OTHER'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "EMERGENCY_CONTACTS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "CONTACT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CONTACT_NAME",
+          "type": "VARCHAR2(100)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "RELATIONSHIP",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PHONE_PRIMARY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PHONE_SECONDARY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMAIL",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PRIORITY_ORDER",
+          "type": "NUMBER(2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/01_core_tables.sql",
+      "ddl": "CREATE TABLE HRMS.EMERGENCY_CONTACTS (\n    CONTACT_ID           NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    CONTACT_NAME         VARCHAR2(100)   NOT NULL,\n    RELATIONSHIP         VARCHAR2(30),\n    PHONE_PRIMARY        VARCHAR2(30)    NOT NULL,\n    PHONE_SECONDARY      VARCHAR2(30),\n    EMAIL                VARCHAR2(100),\n    PRIORITY_ORDER       NUMBER(2)       DEFAULT 1,\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_EMERGENCY_CONTACTS PRIMARY KEY (CONTACT_ID),\n    CONSTRAINT FK_EC_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "SALARY_RECORDS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "SALARY_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EFFECTIVE_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "END_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "BASE_SALARY",
+          "type": "NUMBER(12,2)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CURRENCY_CODE",
+          "type": "VARCHAR2(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PAY_FREQUENCY",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SALARY_BASIS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CHANGE_REASON",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CHANGE_PCT",
+          "type": "NUMBER(5,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "APPROVED_BY",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "APPROVAL_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.SALARY_RECORDS (\n    SALARY_ID            NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    EFFECTIVE_DATE       DATE            NOT NULL,\n    END_DATE             DATE,\n    BASE_SALARY          NUMBER(12,2)    NOT NULL,\n    CURRENCY_CODE        VARCHAR2(3)     DEFAULT 'USD',\n    PAY_FREQUENCY        VARCHAR2(20)    DEFAULT 'MONTHLY',\n    SALARY_BASIS         VARCHAR2(20)    DEFAULT 'ANNUAL',\n    CHANGE_REASON        VARCHAR2(50),\n    CHANGE_PCT           NUMBER(5,2),\n    APPROVED_BY          NUMBER(10),\n    APPROVAL_DATE        DATE,\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_SALARY_RECORDS PRIMARY KEY (SALARY_ID),\n    CONSTRAINT FK_SAL_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT CHK_PAY_FREQ CHECK (PAY_FREQUENCY IN ('WEEKLY', 'BIWEEKLY', 'SEMIMONTHLY', 'MONTHLY')),\n    CONSTRAINT CHK_SAL_BASIS CHECK (SALARY_BASIS IN ('ANNUAL', 'HOURLY'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PAY_ELEMENTS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "ELEMENT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ELEMENT_CODE",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ELEMENT_NAME",
+          "type": "VARCHAR2(100)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ELEMENT_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CALCULATION_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEFAULT_AMOUNT",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEFAULT_PERCENTAGE",
+          "type": "NUMBER(5,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TAXABLE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PRETAX_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMPLOYER_PAID",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "GL_ACCOUNT_CODE",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PRIORITY_ORDER",
+          "type": "NUMBER(5)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.PAY_ELEMENTS (\n    ELEMENT_ID           NUMBER(10)      NOT NULL,\n    ELEMENT_CODE         VARCHAR2(30)    NOT NULL,\n    ELEMENT_NAME         VARCHAR2(100)   NOT NULL,\n    ELEMENT_TYPE         VARCHAR2(20)    NOT NULL,\n    CALCULATION_TYPE     VARCHAR2(20)    NOT NULL,\n    DEFAULT_AMOUNT       NUMBER(12,2),\n    DEFAULT_PERCENTAGE   NUMBER(5,2),\n    TAXABLE_FLAG         CHAR(1)         DEFAULT 'Y',\n    PRETAX_FLAG          CHAR(1)         DEFAULT 'N',\n    EMPLOYER_PAID        CHAR(1)         DEFAULT 'N',\n    GL_ACCOUNT_CODE      VARCHAR2(30),\n    PRIORITY_ORDER       NUMBER(5)       DEFAULT 100,\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_PAY_ELEMENTS PRIMARY KEY (ELEMENT_ID),\n    CONSTRAINT UK_PAY_ELEM_CODE UNIQUE (ELEMENT_CODE),\n    CONSTRAINT CHK_ELEM_TYPE CHECK (ELEMENT_TYPE IN ('EARNING', 'DEDUCTION', 'TAX', 'BENEFIT', 'REIMBURSEMENT')),\n    CONSTRAINT CHK_CALC_TYPE CHECK (CALCULATION_TYPE IN ('FLAT', 'PERCENTAGE', 'HOURS', 'FORMULA'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "EMPLOYEE_PAY_ELEMENTS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "EMP_ELEMENT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ELEMENT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EFFECTIVE_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "END_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "AMOUNT",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PERCENTAGE",
+          "type": "NUMBER(5,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "OVERRIDE_AMOUNT",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.EMPLOYEE_PAY_ELEMENTS (\n    EMP_ELEMENT_ID       NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    ELEMENT_ID           NUMBER(10)      NOT NULL,\n    EFFECTIVE_DATE       DATE            NOT NULL,\n    END_DATE             DATE,\n    AMOUNT               NUMBER(12,2),\n    PERCENTAGE           NUMBER(5,2),\n    OVERRIDE_AMOUNT      NUMBER(12,2),\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_EMP_PAY_ELEMENTS PRIMARY KEY (EMP_ELEMENT_ID),\n    CONSTRAINT FK_EPE_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT FK_EPE_ELEMENT FOREIGN KEY (ELEMENT_ID) REFERENCES HRMS.PAY_ELEMENTS(ELEMENT_ID)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PAY_PERIODS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "PERIOD_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PERIOD_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PAY_FREQUENCY",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PERIOD_START_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PERIOD_END_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PAY_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CLOSED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CLOSED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.PAY_PERIODS (\n    PERIOD_ID            NUMBER(10)      NOT NULL,\n    PERIOD_NAME          VARCHAR2(50)    NOT NULL,\n    PAY_FREQUENCY        VARCHAR2(20)    NOT NULL,\n    PERIOD_START_DATE    DATE            NOT NULL,\n    PERIOD_END_DATE      DATE            NOT NULL,\n    PAY_DATE             DATE            NOT NULL,\n    STATUS               VARCHAR2(20)    DEFAULT 'OPEN',\n    CLOSED_BY            VARCHAR2(30),\n    CLOSED_DATE          DATE,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_PAY_PERIODS PRIMARY KEY (PERIOD_ID),\n    CONSTRAINT CHK_PERIOD_STATUS CHECK (STATUS IN ('OPEN', 'PROCESSING', 'CLOSED', 'REVERSED'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PAYROLL_RUNS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "RUN_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PERIOD_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "RUN_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "RUN_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TOTAL_GROSS",
+          "type": "NUMBER(15,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TOTAL_DEDUCTIONS",
+          "type": "NUMBER(15,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TOTAL_NET",
+          "type": "NUMBER(15,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TOTAL_EMPLOYER_COST",
+          "type": "NUMBER(15,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMPLOYEE_COUNT",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ERROR_COUNT",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SUBMITTED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SUBMITTED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "APPROVED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "APPROVED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.PAYROLL_RUNS (\n    RUN_ID               NUMBER(10)      NOT NULL,\n    PERIOD_ID            NUMBER(10)      NOT NULL,\n    RUN_TYPE             VARCHAR2(20)    DEFAULT 'REGULAR',\n    RUN_DATE             DATE            NOT NULL,\n    STATUS               VARCHAR2(20)    DEFAULT 'PENDING',\n    TOTAL_GROSS          NUMBER(15,2),\n    TOTAL_DEDUCTIONS     NUMBER(15,2),\n    TOTAL_NET            NUMBER(15,2),\n    TOTAL_EMPLOYER_COST  NUMBER(15,2),\n    EMPLOYEE_COUNT       NUMBER(10),\n    ERROR_COUNT          NUMBER(10)      DEFAULT 0,\n    SUBMITTED_BY         VARCHAR2(30),\n    SUBMITTED_DATE       DATE,\n    APPROVED_BY          VARCHAR2(30),\n    APPROVED_DATE        DATE,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_PAYROLL_RUNS PRIMARY KEY (RUN_ID),\n    CONSTRAINT FK_PR_PERIOD FOREIGN KEY (PERIOD_ID) REFERENCES HRMS.PAY_PERIODS(PERIOD_ID),\n    CONSTRAINT CHK_RUN_TYPE CHECK (RUN_TYPE IN ('REGULAR', 'SUPPLEMENTAL', 'BONUS', 'FINAL')),\n    CONSTRAINT CHK_RUN_STATUS CHECK (STATUS IN ('PENDING', 'CALCULATING', 'CALCULATED', 'APPROVED', 'PAID', 'REVERSED', 'ERROR'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PAYROLL_DETAILS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "DETAIL_ID",
+          "type": "NUMBER(15)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "RUN_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ELEMENT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ELEMENT_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "HOURS_WORKED",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "RATE",
+          "type": "NUMBER(12,4)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "AMOUNT",
+          "type": "NUMBER(12,2)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "YTD_AMOUNT",
+          "type": "NUMBER(15,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ERROR_MESSAGE",
+          "type": "VARCHAR2(4000)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.PAYROLL_DETAILS (\n    DETAIL_ID            NUMBER(15)      NOT NULL,\n    RUN_ID               NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    ELEMENT_ID           NUMBER(10)      NOT NULL,\n    ELEMENT_TYPE         VARCHAR2(20)    NOT NULL,\n    HOURS_WORKED         NUMBER(6,2),\n    RATE                 NUMBER(12,4),\n    AMOUNT               NUMBER(12,2)    NOT NULL,\n    YTD_AMOUNT           NUMBER(15,2),\n    STATUS               VARCHAR2(20)    DEFAULT 'CALCULATED',\n    ERROR_MESSAGE        VARCHAR2(4000),\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_PAYROLL_DETAILS PRIMARY KEY (DETAIL_ID),\n    CONSTRAINT FK_PD_RUN FOREIGN KEY (RUN_ID) REFERENCES HRMS.PAYROLL_RUNS(RUN_ID),\n    CONSTRAINT FK_PD_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT FK_PD_ELEMENT FOREIGN KEY (ELEMENT_ID) REFERENCES HRMS.PAY_ELEMENTS(ELEMENT_ID)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "TAX_BRACKETS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "BRACKET_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "TAX_YEAR",
+          "type": "NUMBER(4)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "FILING_STATUS",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "BRACKET_MIN",
+          "type": "NUMBER(12,2)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "BRACKET_MAX",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TAX_RATE",
+          "type": "NUMBER(5,4)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "BASE_TAX",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATE_CODE",
+          "type": "VARCHAR2(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.TAX_BRACKETS (\n    BRACKET_ID           NUMBER(10)      NOT NULL,\n    TAX_YEAR             NUMBER(4)       NOT NULL,\n    FILING_STATUS        VARCHAR2(30)    NOT NULL,\n    BRACKET_MIN          NUMBER(12,2)    NOT NULL,\n    BRACKET_MAX          NUMBER(12,2),\n    TAX_RATE             NUMBER(5,4)     NOT NULL,\n    BASE_TAX             NUMBER(12,2)    DEFAULT 0,\n    STATE_CODE           VARCHAR2(3),\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_TAX_BRACKETS PRIMARY KEY (BRACKET_ID),\n    CONSTRAINT CHK_FILING_STATUS CHECK (FILING_STATUS IN ('SINGLE', 'MARRIED_JOINT', 'MARRIED_SEPARATE', 'HEAD_OF_HOUSEHOLD'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "EMPLOYEE_TAX_INFO",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "TAX_INFO_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "TAX_YEAR",
+          "type": "NUMBER(4)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "FILING_STATUS",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "FEDERAL_ALLOWANCES",
+          "type": "NUMBER(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATE_ALLOWANCES",
+          "type": "NUMBER(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ADDITIONAL_FED_WH",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ADDITIONAL_STATE_WH",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EXEMPT_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATE_CODE",
+          "type": "VARCHAR2(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "W4_RECEIVED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.EMPLOYEE_TAX_INFO (\n    TAX_INFO_ID          NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    TAX_YEAR             NUMBER(4)       NOT NULL,\n    FILING_STATUS        VARCHAR2(30)    NOT NULL,\n    FEDERAL_ALLOWANCES   NUMBER(3)       DEFAULT 0,\n    STATE_ALLOWANCES     NUMBER(3)       DEFAULT 0,\n    ADDITIONAL_FED_WH    NUMBER(12,2)    DEFAULT 0,\n    ADDITIONAL_STATE_WH  NUMBER(12,2)    DEFAULT 0,\n    EXEMPT_FLAG          CHAR(1)         DEFAULT 'N',\n    STATE_CODE           VARCHAR2(3),\n    W4_RECEIVED_DATE     DATE,\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_EMP_TAX_INFO PRIMARY KEY (TAX_INFO_ID),\n    CONSTRAINT FK_ETI_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT UK_EMP_TAX_YEAR UNIQUE (EMP_ID, TAX_YEAR)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "EMPLOYEE_BANK_ACCOUNTS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "BANK_ACCT_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "BANK_NAME",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ROUTING_NUMBER",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCOUNT_NUMBER_ENC",
+          "type": "VARCHAR2(200)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCOUNT_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEPOSIT_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEPOSIT_AMOUNT",
+          "type": "NUMBER(12,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEPOSIT_PERCENTAGE",
+          "type": "NUMBER(5,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PRIORITY_ORDER",
+          "type": "NUMBER(2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PRENOTE_SENT",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PRENOTE_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/02_payroll_tables.sql",
+      "ddl": "CREATE TABLE HRMS.EMPLOYEE_BANK_ACCOUNTS (\n    BANK_ACCT_ID         NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    BANK_NAME            VARCHAR2(100),\n    ROUTING_NUMBER       VARCHAR2(20)    NOT NULL,\n    ACCOUNT_NUMBER_ENC   VARCHAR2(200)   NOT NULL,\n    ACCOUNT_TYPE         VARCHAR2(20)    DEFAULT 'CHECKING',\n    DEPOSIT_TYPE         VARCHAR2(20)    DEFAULT 'FULL',\n    DEPOSIT_AMOUNT       NUMBER(12,2),\n    DEPOSIT_PERCENTAGE   NUMBER(5,2),\n    PRIORITY_ORDER       NUMBER(2)       DEFAULT 1,\n    PRENOTE_SENT         CHAR(1)         DEFAULT 'N',\n    PRENOTE_DATE         DATE,\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_EMP_BANK_ACCTS PRIMARY KEY (BANK_ACCT_ID),\n    CONSTRAINT FK_BA_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT CHK_ACCT_TYPE CHECK (ACCOUNT_TYPE IN ('CHECKING', 'SAVINGS')),\n    CONSTRAINT CHK_DEPOSIT_TYPE CHECK (DEPOSIT_TYPE IN ('FULL', 'PARTIAL_AMOUNT', 'PARTIAL_PERCENT', 'REMAINDER'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "LEAVE_TYPES",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "LEAVE_TYPE_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LEAVE_TYPE_CODE",
+          "type": "VARCHAR2(20)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LEAVE_TYPE_NAME",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PAID_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCRUAL_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCRUAL_RATE",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCRUAL_FREQUENCY",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MAX_BALANCE",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CARRYOVER_MAX",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CARRYOVER_EXPIRY",
+          "type": "NUMBER(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MIN_TENURE_DAYS",
+          "type": "NUMBER(5)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "REQUIRES_APPROVAL",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "REQUIRES_DOCUMENT",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/03_leave_tables.sql",
+      "ddl": "CREATE TABLE HRMS.LEAVE_TYPES (\n    LEAVE_TYPE_ID        NUMBER(5)       NOT NULL,\n    LEAVE_TYPE_CODE      VARCHAR2(20)    NOT NULL,\n    LEAVE_TYPE_NAME      VARCHAR2(50)    NOT NULL,\n    PAID_FLAG            CHAR(1)         DEFAULT 'Y',\n    ACCRUAL_FLAG         CHAR(1)         DEFAULT 'Y',\n    ACCRUAL_RATE         NUMBER(6,2),\n    ACCRUAL_FREQUENCY    VARCHAR2(20),\n    MAX_BALANCE          NUMBER(6,2),\n    CARRYOVER_MAX        NUMBER(6,2),\n    CARRYOVER_EXPIRY     NUMBER(3),\n    MIN_TENURE_DAYS      NUMBER(5)       DEFAULT 0,\n    REQUIRES_APPROVAL    CHAR(1)         DEFAULT 'Y',\n    REQUIRES_DOCUMENT    CHAR(1)         DEFAULT 'N',\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_LEAVE_TYPES PRIMARY KEY (LEAVE_TYPE_ID),\n    CONSTRAINT UK_LEAVE_TYPE_CODE UNIQUE (LEAVE_TYPE_CODE),\n    CONSTRAINT CHK_ACCRUAL_FREQ CHECK (ACCRUAL_FREQUENCY IN ('MONTHLY', 'BIWEEKLY', 'ANNUAL', NULL))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "LEAVE_BALANCES",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "BALANCE_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LEAVE_TYPE_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CALENDAR_YEAR",
+          "type": "NUMBER(4)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "OPENING_BALANCE",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCRUED",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "USED",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ADJUSTMENT",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PENDING",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "AVAILABLE",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CARRYOVER_FROM_PREV",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CARRYOVER_EXPIRY_DT",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/03_leave_tables.sql",
+      "ddl": "CREATE TABLE HRMS.LEAVE_BALANCES (\n    BALANCE_ID           NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    LEAVE_TYPE_ID        NUMBER(5)       NOT NULL,\n    CALENDAR_YEAR        NUMBER(4)       NOT NULL,\n    OPENING_BALANCE      NUMBER(6,2)     DEFAULT 0,\n    ACCRUED              NUMBER(6,2)     DEFAULT 0,\n    USED                 NUMBER(6,2)     DEFAULT 0,\n    ADJUSTMENT           NUMBER(6,2)     DEFAULT 0,\n    PENDING              NUMBER(6,2)     DEFAULT 0,\n    AVAILABLE            NUMBER(6,2)     GENERATED ALWAYS AS (OPENING_BALANCE + ACCRUED - USED + ADJUSTMENT - PENDING) VIRTUAL,\n    CARRYOVER_FROM_PREV  NUMBER(6,2)     DEFAULT 0,\n    CARRYOVER_EXPIRY_DT  DATE,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_LEAVE_BALANCES PRIMARY KEY (BALANCE_ID),\n    CONSTRAINT FK_LB_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT FK_LB_TYPE FOREIGN KEY (LEAVE_TYPE_ID) REFERENCES HRMS.LEAVE_TYPES(LEAVE_TYPE_ID),\n    CONSTRAINT UK_LEAVE_BAL UNIQUE (EMP_ID, LEAVE_TYPE_ID, CALENDAR_YEAR)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "LEAVE_REQUESTS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "REQUEST_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LEAVE_TYPE_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "START_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "END_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "TOTAL_DAYS",
+          "type": "NUMBER(5,1)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "HALF_DAY_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "HALF_DAY_PERIOD",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "REASON",
+          "type": "VARCHAR2(4000)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SUPPORTING_DOC_PATH",
+          "type": "VARCHAR2(500)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "APPROVER_EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "APPROVAL_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "APPROVAL_COMMENTS",
+          "type": "VARCHAR2(4000)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CANCEL_REASON",
+          "type": "VARCHAR2(4000)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CANCELLED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/03_leave_tables.sql",
+      "ddl": "CREATE TABLE HRMS.LEAVE_REQUESTS (\n    REQUEST_ID           NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    LEAVE_TYPE_ID        NUMBER(5)       NOT NULL,\n    START_DATE           DATE            NOT NULL,\n    END_DATE             DATE            NOT NULL,\n    TOTAL_DAYS           NUMBER(5,1)     NOT NULL,\n    HALF_DAY_FLAG        CHAR(1)         DEFAULT 'N',\n    HALF_DAY_PERIOD      VARCHAR2(10),\n    STATUS               VARCHAR2(20)    DEFAULT 'PENDING',\n    REASON               VARCHAR2(4000),\n    SUPPORTING_DOC_PATH  VARCHAR2(500),\n    APPROVER_EMP_ID      NUMBER(10),\n    APPROVAL_DATE        DATE,\n    APPROVAL_COMMENTS    VARCHAR2(4000),\n    CANCEL_REASON        VARCHAR2(4000),\n    CANCELLED_DATE       DATE,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_LEAVE_REQUESTS PRIMARY KEY (REQUEST_ID),\n    CONSTRAINT FK_LR_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT FK_LR_TYPE FOREIGN KEY (LEAVE_TYPE_ID) REFERENCES HRMS.LEAVE_TYPES(LEAVE_TYPE_ID),\n    CONSTRAINT FK_LR_APPROVER FOREIGN KEY (APPROVER_EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT CHK_LR_STATUS CHECK (STATUS IN ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'TAKEN')),\n    CONSTRAINT CHK_LR_DATES CHECK (END_DATE >= START_DATE),\n    CONSTRAINT CHK_HALF_DAY CHECK (HALF_DAY_PERIOD IN ('A",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "LEAVE_ACCRUAL_LOG",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "ACCRUAL_ID",
+          "type": "NUMBER(15)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LEAVE_TYPE_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCRUAL_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACCRUAL_AMOUNT",
+          "type": "NUMBER(6,2)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "BALANCE_AFTER",
+          "type": "NUMBER(6,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "RUN_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/03_leave_tables.sql",
+      "ddl": "CREATE TABLE HRMS.LEAVE_ACCRUAL_LOG (\n    ACCRUAL_ID           NUMBER(15)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    LEAVE_TYPE_ID        NUMBER(5)       NOT NULL,\n    ACCRUAL_DATE         DATE            NOT NULL,\n    ACCRUAL_AMOUNT       NUMBER(6,2)     NOT NULL,\n    BALANCE_AFTER        NUMBER(6,2),\n    RUN_ID               NUMBER(10),\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_LEAVE_ACCRUAL_LOG PRIMARY KEY (ACCRUAL_ID),\n    CONSTRAINT FK_LAL_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT FK_LAL_TYPE FOREIGN KEY (LEAVE_TYPE_ID) REFERENCES HRMS.LEAVE_TYPES(LEAVE_TYPE_ID)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "HOLIDAYS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "HOLIDAY_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "HOLIDAY_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "HOLIDAY_NAME",
+          "type": "VARCHAR2(100)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOCATION_CODE",
+          "type": "VARCHAR2(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "FLOATING_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/03_leave_tables.sql",
+      "ddl": "CREATE TABLE HRMS.HOLIDAYS (\n    HOLIDAY_ID           NUMBER(5)       NOT NULL,\n    HOLIDAY_DATE         DATE            NOT NULL,\n    HOLIDAY_NAME         VARCHAR2(100)   NOT NULL,\n    LOCATION_CODE        VARCHAR2(10),\n    FLOATING_FLAG        CHAR(1)         DEFAULT 'N',\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_HOLIDAYS PRIMARY KEY (HOLIDAY_ID)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "REVIEW_CYCLES",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "CYCLE_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CYCLE_NAME",
+          "type": "VARCHAR2(100)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CYCLE_YEAR",
+          "type": "NUMBER(4)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "START_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "END_DATE",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "SELF_REVIEW_DUE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MANAGER_REVIEW_DUE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CALIBRATION_DUE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.REVIEW_CYCLES (\n    CYCLE_ID             NUMBER(10)      NOT NULL,\n    CYCLE_NAME           VARCHAR2(100)   NOT NULL,\n    CYCLE_YEAR           NUMBER(4)       NOT NULL,\n    START_DATE           DATE            NOT NULL,\n    END_DATE             DATE            NOT NULL,\n    SELF_REVIEW_DUE      DATE,\n    MANAGER_REVIEW_DUE   DATE,\n    CALIBRATION_DUE      DATE,\n    STATUS               VARCHAR2(20)    DEFAULT 'DRAFT',\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_REVIEW_CYCLES PRIMARY KEY (CYCLE_ID),\n    CONSTRAINT CHK_CYCLE_STATUS CHECK (STATUS IN ('DRAFT', 'OPEN', 'IN_PROGRESS', 'CALIBRATION', 'CLOSED'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PERFORMANCE_REVIEWS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "REVIEW_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CYCLE_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "REVIEWER_EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "REVIEW_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "OVERALL_RATING",
+          "type": "NUMBER(2,1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "RATING_LABEL",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SELF_ASSESSMENT",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MANAGER_ASSESSMENT",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STRENGTHS",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "AREAS_FOR_IMPROVEMENT",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "DEVELOPMENT_PLAN",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMPLOYEE_COMMENTS",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMPLOYEE_ACK_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CALIBRATED_RATING",
+          "type": "NUMBER(2,1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CALIBRATION_NOTES",
+          "type": "VARCHAR2(4000)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.PERFORMANCE_REVIEWS (\n    REVIEW_ID            NUMBER(10)      NOT NULL,\n    CYCLE_ID             NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    REVIEWER_EMP_ID      NUMBER(10)      NOT NULL,\n    REVIEW_TYPE          VARCHAR2(20)    DEFAULT 'ANNUAL',\n    STATUS               VARCHAR2(20)    DEFAULT 'NOT_STARTED',\n    OVERALL_RATING       NUMBER(2,1),\n    RATING_LABEL         VARCHAR2(50),\n    SELF_ASSESSMENT      CLOB,\n    MANAGER_ASSESSMENT   CLOB,\n    STRENGTHS            CLOB,\n    AREAS_FOR_IMPROVEMENT CLOB,\n    DEVELOPMENT_PLAN     CLOB,\n    EMPLOYEE_COMMENTS    CLOB,\n    EMPLOYEE_ACK_DATE    DATE,\n    CALIBRATED_RATING    NUMBER(2,1),\n    CALIBRATION_NOTES    VARCHAR2(4000),\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_PERFORMANCE_REVIEWS PRIMARY KEY (REVIEW_ID),\n    CONSTRAINT FK_PR_CYCLE FOREIGN KEY (CYCLE_ID) REFERENCES HRMS.REVIEW_CYCLES(CYCLE_ID),\n    CONSTRAINT FK_PR_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT FK_PR_REVIEWER FOREIGN KEY (REVIEWER_EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT CHK_REVIEW_STATUS CHECK (STATUS IN ('NOT_STARTED', 'SELF_REVIEW', 'MANAGER_REVIEW', 'MEETING_SCHEDULED', 'COMPLETED', 'ACKNOWLEDGED')),\n    CONSTRAINT CHK_RATING_RANGE CHECK (OVERALL_RATING BETWEEN 1.0 AND 5.0)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PERFORMANCE_GOALS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "GOAL_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "REVIEW_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "GOAL_TITLE",
+          "type": "VARCHAR2(200)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "GOAL_DESCRIPTION",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "GOAL_CATEGORY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "WEIGHT_PCT",
+          "type": "NUMBER(5,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "TARGET_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PROGRESS_PCT",
+          "type": "NUMBER(5,2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SELF_RATING",
+          "type": "NUMBER(2,1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MANAGER_RATING",
+          "type": "NUMBER(2,1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "COMMENTS",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.PERFORMANCE_GOALS (\n    GOAL_ID              NUMBER(10)      NOT NULL,\n    REVIEW_ID            NUMBER(10)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    GOAL_TITLE           VARCHAR2(200)   NOT NULL,\n    GOAL_DESCRIPTION     CLOB,\n    GOAL_CATEGORY        VARCHAR2(30),\n    WEIGHT_PCT           NUMBER(5,2)     DEFAULT 0,\n    TARGET_DATE          DATE,\n    STATUS               VARCHAR2(20)    DEFAULT 'NOT_STARTED',\n    PROGRESS_PCT         NUMBER(5,2)     DEFAULT 0,\n    SELF_RATING          NUMBER(2,1),\n    MANAGER_RATING       NUMBER(2,1),\n    COMMENTS             CLOB,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_PERF_GOALS PRIMARY KEY (GOAL_ID),\n    CONSTRAINT FK_PG_REVIEW FOREIGN KEY (REVIEW_ID) REFERENCES HRMS.PERFORMANCE_REVIEWS(REVIEW_ID),\n    CONSTRAINT FK_PG_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID),\n    CONSTRAINT CHK_GOAL_STATUS CHECK (STATUS IN ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'DEFERRED', 'CANCELLED')),\n    CONSTRAINT CHK_GOAL_CATEGORY CHECK (GOAL_CATEGORY IN ('BUSINESS', 'DEVELOPMENT', 'LEADERSHIP', 'INNOVATION', 'COMPLIANCE'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "AUDIT_LOG",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "AUDIT_ID",
+          "type": "NUMBER(15)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "TABLE_NAME",
+          "type": "VARCHAR2(60)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "RECORD_ID",
+          "type": "NUMBER(15)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTION_TYPE",
+          "type": "VARCHAR2(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "OLD_VALUES",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NEW_VALUES",
+          "type": "CLOB",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CHANGED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CHANGED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "IP_ADDRESS",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SESSION_ID",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.AUDIT_LOG (\n    AUDIT_ID             NUMBER(15)      NOT NULL,\n    TABLE_NAME           VARCHAR2(60)    NOT NULL,\n    RECORD_ID            NUMBER(15)      NOT NULL,\n    ACTION_TYPE          VARCHAR2(10)    NOT NULL,\n    OLD_VALUES           CLOB,\n    NEW_VALUES           CLOB,\n    CHANGED_BY           VARCHAR2(30)    NOT NULL,\n    CHANGED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    IP_ADDRESS           VARCHAR2(50),\n    SESSION_ID           VARCHAR2(100),\n    CONSTRAINT PK_AUDIT_LOG PRIMARY KEY (AUDIT_ID),\n    CONSTRAINT CHK_AUDIT_ACTION CHECK (ACTION_TYPE IN ('INSERT', 'UPDATE', 'DELETE'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "SYSTEM_PARAMETERS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "PARAM_ID",
+          "type": "NUMBER(5)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PARAM_GROUP",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PARAM_CODE",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PARAM_VALUE",
+          "type": "VARCHAR2(4000)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "PARAM_DESCRIPTION",
+          "type": "VARCHAR2(200)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "DATA_TYPE",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "EDITABLE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "MODIFIED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.SYSTEM_PARAMETERS (\n    PARAM_ID             NUMBER(5)       NOT NULL,\n    PARAM_GROUP          VARCHAR2(50)    NOT NULL,\n    PARAM_CODE           VARCHAR2(50)    NOT NULL,\n    PARAM_VALUE          VARCHAR2(4000)  NOT NULL,\n    PARAM_DESCRIPTION    VARCHAR2(200),\n    DATA_TYPE            VARCHAR2(20)    DEFAULT 'VARCHAR2',\n    EDITABLE_FLAG        CHAR(1)         DEFAULT 'Y',\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    MODIFIED_BY          VARCHAR2(30),\n    MODIFIED_DATE        DATE,\n    CONSTRAINT PK_SYSTEM_PARAMS PRIMARY KEY (PARAM_ID),\n    CONSTRAINT UK_PARAM_CODE UNIQUE (PARAM_GROUP, PARAM_CODE)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "NOTIFICATION_QUEUE",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "NOTIFICATION_ID",
+          "type": "NUMBER(15)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "RECIPIENT_EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "RECIPIENT_EMAIL",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "NOTIFICATION_TYPE",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "SUBJECT",
+          "type": "VARCHAR2(200)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "BODY",
+          "type": "CLOB",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PRIORITY",
+          "type": "NUMBER(2)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SENT_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ERROR_MESSAGE",
+          "type": "VARCHAR2(4000)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "RETRY_COUNT",
+          "type": "NUMBER(3)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "REFERENCE_TABLE",
+          "type": "VARCHAR2(60)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "REFERENCE_ID",
+          "type": "NUMBER(15)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.NOTIFICATION_QUEUE (\n    NOTIFICATION_ID      NUMBER(15)      NOT NULL,\n    RECIPIENT_EMP_ID     NUMBER(10),\n    RECIPIENT_EMAIL      VARCHAR2(100),\n    NOTIFICATION_TYPE    VARCHAR2(30)    NOT NULL,\n    SUBJECT              VARCHAR2(200)   NOT NULL,\n    BODY                 CLOB            NOT NULL,\n    STATUS               VARCHAR2(20)    DEFAULT 'PENDING',\n    PRIORITY             NUMBER(2)       DEFAULT 5,\n    SENT_DATE            DATE,\n    ERROR_MESSAGE        VARCHAR2(4000),\n    RETRY_COUNT          NUMBER(3)       DEFAULT 0,\n    REFERENCE_TABLE      VARCHAR2(60),\n    REFERENCE_ID         NUMBER(15),\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_NOTIF_QUEUE PRIMARY KEY (NOTIFICATION_ID),\n    CONSTRAINT CHK_NOTIF_STATUS CHECK (STATUS IN ('PENDING', 'SENT', 'FAILED', 'CANCELLED')),\n    CONSTRAINT CHK_NOTIF_TYPE CHECK (NOTIFICATION_TYPE IN ('EMAIL', 'IN_APP', 'SMS'))\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "USER_SESSIONS",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "SESSION_ID",
+          "type": "NUMBER(15)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "EMP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "USERNAME",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOGIN_TIME",
+          "type": "DATE",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOGOUT_TIME",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "IP_ADDRESS",
+          "type": "VARCHAR2(50)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "FORMS_MODULE",
+          "type": "VARCHAR2(100)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "SESSION_STATUS",
+          "type": "VARCHAR2(20)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.USER_SESSIONS (\n    SESSION_ID           NUMBER(15)      NOT NULL,\n    EMP_ID               NUMBER(10)      NOT NULL,\n    USERNAME             VARCHAR2(30)    NOT NULL,\n    LOGIN_TIME           DATE            NOT NULL,\n    LOGOUT_TIME          DATE,\n    IP_ADDRESS           VARCHAR2(50),\n    FORMS_MODULE         VARCHAR2(100),\n    SESSION_STATUS       VARCHAR2(20)    DEFAULT 'ACTIVE',\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_USER_SESSIONS PRIMARY KEY (SESSION_ID),\n    CONSTRAINT FK_US_EMP FOREIGN KEY (EMP_ID) REFERENCES HRMS.EMPLOYEES(EMP_ID)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "LOOKUP_VALUES",
+      "schema": "HRMS",
+      "columns": [
+        {
+          "name": "LOOKUP_ID",
+          "type": "NUMBER(10)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOOKUP_TYPE",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOOKUP_CODE",
+          "type": "VARCHAR2(50)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "LOOKUP_VALUE",
+          "type": "VARCHAR2(200)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "DISPLAY_ORDER",
+          "type": "NUMBER(5)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "PARENT_LOOKUP_ID",
+          "type": "NUMBER(10)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "ACTIVE_FLAG",
+          "type": "CHAR(1)",
+          "nullable": true,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_BY",
+          "type": "VARCHAR2(30)",
+          "nullable": false,
+          "is_primary_key": false
+        },
+        {
+          "name": "CREATED_DATE",
+          "type": "DATE",
+          "nullable": true,
+          "is_primary_key": false
+        }
+      ],
+      "source_file": "schema/tables/04_performance_tables.sql",
+      "ddl": "CREATE TABLE HRMS.LOOKUP_VALUES (\n    LOOKUP_ID            NUMBER(10)      NOT NULL,\n    LOOKUP_TYPE          VARCHAR2(50)    NOT NULL,\n    LOOKUP_CODE          VARCHAR2(50)    NOT NULL,\n    LOOKUP_VALUE         VARCHAR2(200)   NOT NULL,\n    DISPLAY_ORDER        NUMBER(5)       DEFAULT 0,\n    PARENT_LOOKUP_ID     NUMBER(10),\n    ACTIVE_FLAG          CHAR(1)         DEFAULT 'Y' NOT NULL,\n    CREATED_BY           VARCHAR2(30)    NOT NULL,\n    CREATED_DATE         DATE            DEFAULT SYSDATE NOT NULL,\n    CONSTRAINT PK_LOOKUP_VALUES PRIMARY KEY (LOOKUP_ID),\n    CONSTRAINT UK_LOOKUP UNIQUE (LOOKUP_TYPE, LOOKUP_CODE)\n);",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    }
+  ],
+  "stored_procedures": [],
+  "packages": [
+    {
+      "name": "PKG_AUDIT",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_AUDIT.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_AUDIT",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_AUDIT.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_COMMON",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_COMMON.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_COMMON",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_COMMON.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_EMPLOYEE",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_EMPLOYEE.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_EMPLOYEE",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_EMPLOYEE.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_INTEGRATION",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_INTEGRATION.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_INTEGRATION",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_INTEGRATION.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_LEAVE",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_LEAVE.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_LEAVE",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_LEAVE.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_NOTIFICATION",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_NOTIFICATION.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_NOTIFICATION",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_NOTIFICATION.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_PAYROLL",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_PAYROLL.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_PAYROLL",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_PAYROLL.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_PERFORMANCE",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_PERFORMANCE.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_PERFORMANCE",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_PERFORMANCE.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_REPORTING",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_REPORTING.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_REPORTING",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_REPORTING.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_SECURITY",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_SECURITY.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_SECURITY",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_SECURITY.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_VALIDATION",
+      "schema": "HRMS",
+      "kind": "body",
+      "source_file": "plsql/packages/PKG_VALIDATION.pkb",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "PKG_VALIDATION",
+      "schema": "HRMS",
+      "kind": "spec",
+      "source_file": "plsql/packages/PKG_VALIDATION.pks",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    }
+  ],
+  "triggers": [
+    {
+      "name": "TRG_SALARY_AUDIT",
+      "timing": "AFTER",
+      "on_table": "SALARY_RECORDS",
+      "schema": "HRMS",
+      "source_file": "plsql/triggers/trg_audit.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "TRG_LEAVE_REQUEST_AUDIT",
+      "timing": "AFTER",
+      "on_table": "LEAVE_REQUESTS",
+      "schema": "HRMS",
+      "source_file": "plsql/triggers/trg_audit.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "TRG_DEPARTMENT_AUDIT",
+      "timing": "AFTER",
+      "on_table": "DEPARTMENTS",
+      "schema": "HRMS",
+      "source_file": "plsql/triggers/trg_audit.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "TRG_EMP_BEFORE_INSERT",
+      "timing": "BEFORE",
+      "on_table": "EMPLOYEES",
+      "schema": "HRMS",
+      "source_file": "plsql/triggers/trg_employees.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "TRG_EMP_BEFORE_UPDATE",
+      "timing": "BEFORE",
+      "on_table": "EMPLOYEES",
+      "schema": "HRMS",
+      "source_file": "plsql/triggers/trg_employees.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "TRG_EMP_INSTEAD_OF_DELETE",
+      "timing": "BEFORE",
+      "on_table": "EMPLOYEES",
+      "schema": "HRMS",
+      "source_file": "plsql/triggers/trg_employees.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    }
+  ],
+  "views": [
+    {
+      "name": "VW_ACTIVE_EMPLOYEES",
+      "schema": "HRMS",
+      "source_file": "schema/views/hrms_views.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "VW_ORG_HIERARCHY",
+      "schema": "HRMS",
+      "source_file": "schema/views/hrms_views.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "VW_EMPLOYEE_COMPENSATION",
+      "schema": "HRMS",
+      "source_file": "schema/views/hrms_views.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "VW_LEAVE_SUMMARY",
+      "schema": "HRMS",
+      "source_file": "schema/views/hrms_views.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "VW_PAYROLL_LATEST",
+      "schema": "HRMS",
+      "source_file": "schema/views/hrms_views.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    },
+    {
+      "name": "VW_PENDING_APPROVALS",
+      "schema": "HRMS",
+      "source_file": "schema/views/hrms_views.sql",
+      "extraction_timestamp": "2026-07-23T13:30:37.670673+00:00"
+    }
+  ],
+  "relationships": [],
+  "ef_entities": [],
+  "db_contexts": []
+}

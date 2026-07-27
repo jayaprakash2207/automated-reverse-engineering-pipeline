@@ -1,0 +1,143 @@
+```json
+{
+  "metadata": {
+    "generated_by": "Foundation Synthesis Agent",
+    "part": "1 of 2",
+    "source_layer_reports": [
+      "results/Business_Analysis/BA_Deep_Analyst.md (available to this agent only as a chat-facing summary, not full text)",
+      "results/Data_Analysis/DA_Data_Reviewer.md (summary only)",
+      "TA_Deep_Analysis.md (summary only)",
+      "architecture-output/final/quality-review.md, executive-summary-for-review.md, final-sanity-check.md (summary only)"
+    ],
+    "critical_caveat": "This synthesis was built ONLY from the four hand-off summary paragraphs pasted into this agent's prompt. The full underlying documents (BR-01..32 text, TD-01..32 text, AP-01..21 text, the 30-table DDL, the component registry, dependency-graph.json) were NOT provided to this agent. Every fact below traces to an explicit sentence in one of the four summaries. Anything else is marked MISSING, not inferred further. Part 2 (or a re-run of Part 1) MUST re-ingest the full layer files before this graph can be considered complete.",
+    "anti_hallucination_rule": "unknown -> stated as unknown, never guessed",
+    "confidence_scale": ["HIGH: direct evidence in a provided layer summary", "MEDIUM: inferred from naming/pattern consistency across summaries", "LOW: assumed from naming alone", "ASSUMED: no evidence, flagged assumption"]
+  },
+  "business": {
+    "domain_root": {
+      "id": "DOM-001",
+      "type": "Domain",
+      "name": "HR & Payroll Management",
+      "owner_layer": "Business",
+      "confidence": "MEDIUM",
+      "evidence": "Inferred from the six named value streams in BA_Deep_Analyst.md summary; no explicit domain name was given."
+    },
+    "value_streams": [
+      {"id": "VS-01", "name": "Employee Lifecycle", "owner_layer": "Business", "confidence": "HIGH", "evidence": "BA_Deep_Analyst.md summary: '6 value streams covering Employee Lifecycle...'"},
+      {"id": "VS-02", "name": "Leave Request", "owner_layer": "Business", "confidence": "HIGH", "evidence": "BA_Deep_Analyst.md summary"},
+      {"id": "VS-03", "name": "Pay Period", "owner_layer": "Business", "confidence": "HIGH", "evidence": "BA_Deep_Analyst.md summary"},
+      {"id": "VS-04", "name": "Payroll Run", "owner_layer": "Business", "confidence": "HIGH", "evidence": "BA_Deep_Analyst.md summary"},
+      {"id": "VS-05", "name": "Review Cycle", "owner_layer": "Business", "confidence": "HIGH", "evidence": "BA_Deep_Analyst.md summary"},
+      {"id": "VS-06", "name": "Individual Review", "owner_layer": "Business", "confidence": "HIGH", "evidence": "BA_Deep_Analyst.md summary"}
+    ],
+    "business_rules": {
+      "id": "BR-SET",
+      "type": "BusinessRuleSet",
+      "count": 32,
+      "range": "BR-01..BR-32",
+      "owner_layer": "Business",
+      "confidence": "HIGH (count) / LOW (content, only 2 of 32 known)",
+      "evidence": "BA_Deep_Analyst.md: '32 business rules (BR-01-BR-32) with exact thresholds preserved'",
+      "known_members": [
+        {"id": "BR-hire-date-drift", "description": "Hire-date related threshold given as 90 days in one location and 180 days in another (unresolved drift, confirmed).", "confidence": "HIGH", "evidence": "BA summary: 'confirmed hire-date drift (90 vs. 180 days)'"},
+        {"id": "BR-leave-balance-formula", "description": "Leave-balance calculation formula diverges between two sources in the system.", "confidence": "HIGH", "evidence": "BA summary: 'leave-balance formula divergence'"}
+      ],
+      "unknown_members": "BR-01..BR-32 minus the two above: content MISSING, not provided to this agent."
+    },
+    "pain_points": {"count": 13, "confidence": "HIGH (count)", "evidence": "BA_Deep_Analyst.md summary", "known_members": [
+      {"id": "PP-leave-approval-gap", "severity": "HIGH", "description": "No working screen anywhere in the scanned system for a manager to approve/reject a leave request; only submission and self-cancellation exist.", "confidence": "HIGH", "evidence": "BA summary, headlined finding"}
+    ], "unknown_members": "12 of 13 pain points: content MISSING"},
+    "automation_opportunities": {"count": 7, "confidence": "HIGH (count only)", "evidence": "BA_Deep_Analyst.md summary", "content": "MISSING"},
+    "defect_discrepancy_log": {"count": 6, "confidence": "HIGH (count)", "evidence": "BA_Deep_Analyst.md summary: 'Defect/Discrepancy Log (6 items) formalizing the cross-file defects Agent 1 flagged'", "content": "Individual items not enumerated in the summary; cross-referenced defects likely include EMPLOYEE_HISTORY trigger break and leave-status audit issue (see DISC log). Full list MISSING."},
+    "validation_queue": {"count": 12, "confidence": "HIGH (count)", "evidence": "BA_Deep_Analyst.md summary", "known_members": [
+      {"id": "VQ-09", "description": "Agent 1's handoff only included a summary paragraph, not full 6 output files verbatim; BA reconstructed entity/state/domain ground truth directly from schema and flagged this as a limitation rather than treating its re-derivation as equivalent to Agent 1's original naming.", "confidence": "HIGH", "evidence": "BA summary, final paragraph"}
+    ], "unknown_members": "11 of 12: content MISSING"},
+    "stakeholder_matrix_and_process_flows": {"confidence": "MEDIUM", "evidence": "BA summary states these exist ('Business Capability Map, Process Flows, and Stakeholder Matrix in plain language'), content not provided", "content": "MISSING"}
+  },
+  "data": {
+    "schema": {"id": "SCHEMA-001", "type": "Database", "table_count": 30, "owner_layer": "Data", "confidence": "HIGH", "evidence": "DA_Data_Reviewer.md: 'No USER_CREDENTIALS/password table exists anywhere in the 30-table schema'"},
+    "tables": [
+      {"id": "TBL-EMPLOYEES", "name": "EMPLOYEES", "owner_layer": "Data", "confidence": "HIGH", "evidence": "Referenced across DA and AA summaries as target of authenticate() lookup and trigger writes"},
+      {"id": "TBL-EMPLOYEE_HISTORY", "name": "EMPLOYEE_HISTORY", "owner_layer": "Data", "confidence": "HIGH", "evidence": "DA + TA summaries: trigger inserts into this table with wrong/mismatched columns"},
+      {"id": "TBL-USER_CREDENTIALS-ABSENT", "name": "USER_CREDENTIALS", "status": "CONFIRMED ABSENT", "owner_layer": "Data", "confidence": "HIGH", "evidence": "DA_Data_Reviewer.md: 'No USER_CREDENTIALS/password table exists anywhere in the 30-table schema'"}
+    ],
+    "other_28_tables": {"confidence": "LOW", "content": "MISSING - only 2 of 30 tables named explicitly in the provided summaries; remaining names/columns not available to this agent"},
+    "packages": [
+      {"id": "PKG-SECURITY", "name": "PKG_SECURITY", "owner_layer": "Data", "confidence": "HIGH", "evidence": "DA summary", "defects": ["authenticate() never checks password, just looks up employee by email and issues a valid session (CRITICAL, HIGH confidence)", "hard-coded AES-256 key for SSN encryption, literal string in PKG_SECURITY.pkb, in version control (CRITICAL, HIGH confidence)"]},
+      {"id": "PKG-EMPLOYEE", "name": "PKG_EMPLOYEE", "owner_layer": "Data", "confidence": "HIGH", "evidence": "DA summary", "procedures": ["transfer_employee", "promote_employee", "terminate_employee", "rehire_employee"], "defect": "All four procedures trip the broken EMPLOYEE_HISTORY trigger on every call; employee lifecycle beyond hire/basic-profile-edit is non-functional as shipped. Confidence HIGH (confirmed by reading PKG_EMPLOYEE.pkb)."},
+      {"id": "PKG-AUDIT", "name": "PKG_AUDIT", "owner_layer": "Data", "confidence": "HIGH", "evidence": "DA summary", "defect": "log_action swallows errors internally; leave-status audit constraint violation does not break leave approvals, but silently produces no audit trail entry. Confidence HIGH (re-characterized, less severe than Agent 1 feared)."}
+    ],
+    "package_count_note": {"confidence": "MEDIUM", "evidence": "AA summary implies 10 or 11 PKG_* packages system-wide (see DISC-003); DA summary does not state a total package count, only the 3 named above are confirmed."},
+    "quality_review_metrics": {"before_score": 0.75, "after_score": 0.93, "changes": {"added": 6, "corrected": 5, "enriched": 4}, "detailed_change_records": 11, "confidence": "HIGH", "evidence": "DA_Data_Reviewer.md summary"},
+    "gate_g1_recommendation": {"status": "NOT READY", "open_questions": 5, "known_open_question": "Whether the auth bypass and hard-coded key reflect an intentionally-flawed training repo vs. an actual production concern.", "confidence": "HIGH", "evidence": "DA_Data_Reviewer.md summary"}
+  },
+  "application": {
+    "modules": {"count": 13, "confidence": "HIGH", "evidence": "AA_Quality_Review.md summary: '6 of 13 modules have zero COMP-xxx entries despite their pieces appearing as graph nodes'", "modules_missing_component_entries": 6, "content_of_13_names": "MISSING - not enumerated in provided summary"},
+    "triggers": [
+      {"id": "TRG-BEFORE-UPDATE", "name": "TRG_EMP_BEFORE_UPDATE", "owner_layer": "Technology/Application (cross-layer)", "confidence": "HIGH", "evidence": "TA + AA summaries", "defect": "Writes to EMPLOYEE_HISTORY with column-shape mismatch and disallowed CHECK values; raises ORA-00904/ORA-02290 on every department or job change. Cross-confirmed from trigger code and table DDL (TA, HIGH confidence)."},
+      {"id": "TRG-INSTEAD-OF-DELETE", "name": "TRG_EMP_INSTEAD_OF_DELETE", "owner_layer": "Application", "confidence": "MEDIUM", "evidence": "AA summary: diagram shows edge TRG_EMP_INSTEAD_OF_DELETE→EMPLOYEES that does not exist in dependency-graph.json's edges array (see DISC-004) - existence of the trigger itself is HIGH, but the drawn dependency edge is disputed"}
+    ],
+    "diagrams": {
+      "component_view": {"file": "component-view.mmd", "confidence": "MEDIUM", "evidence": "AA summary", "issue": "Draws a dependency edge not present in dependency-graph.json (see DISC-004)"},
+      "dependency_view": {"file": "dependency-view.mmd", "confidence": "MEDIUM", "evidence": "AA summary", "issue": "Same as above (see DISC-004)"},
+      "dependency_graph_json": {"file": "dependency-graph.json", "confidence": "HIGH (existence)", "evidence": "AA summary", "afferent_coupling_note": "EMPLOYEES afferent-coupling count of 5 blends 4 real edges with 1 relationship the prose itself calls 'indirect' (see DISC-005)"}
+    },
+    "quality_verdict": {"overall": "PARTIAL", "confidence": "HIGH", "evidence": "AA_Quality_Review.md summary", "failed_checks": ["required files exist (architecture-output/final/ tree not produced; consolidated into one root file instead)"], "partial_checks": ["modules match component registry", "diagrams match JSON artifacts"], "passed_checks": ["JSON validity", "edge resolution", "call-flow traceability", "no invented infrastructure", "risk/violation quality", "forward-engineering actionability"]},
+    "package_count_discrepancy": {"section_2_count": 10, "app_risk_003_count": 11, "confidence": "HIGH (discrepancy exists)", "evidence": "AA summary: 'Section 2 says 10 packages system-wide, APP-RISK-003 lists 11'"}
+  },
+  "technology": {
+    "architecture_patterns": {"count": 21, "range": "AP-01..AP-21", "confidence": "HIGH (count)", "content": "MISSING", "evidence": "TA_Deep_Analysis.md summary"},
+    "nfrs": {"count": 3, "range": "NFR-01..NFR-03", "confidence": "HIGH (count)", "content": "MISSING", "evidence": "TA_Deep_Analysis.md summary"},
+    "technical_debt": {
+      "count": 32, "range": "TD-01..TD-32", "breakdown": {"critical": 7, "high": 10, "medium": 12, "low": 3},
+      "confidence": "HIGH (count/breakdown)", "evidence": "TA_Deep_Analysis.md summary",
+      "known_members": [
+        {"id": "TD-11", "description": "TRG_EMP_BEFORE_UPDATE writes to EMPLOYEE_HISTORY are structurally broken: column-shape mismatch.", "severity": "Critical (implied, flagged as highest-priority)", "confidence": "HIGH"},
+        {"id": "TD-12", "description": "TRG_EMP_BEFORE_UPDATE inserts disallowed CHECK values into EMPLOYEE_HISTORY.", "severity": "Critical (implied)", "confidence": "HIGH", "evidence": "TA summary: 'This will raise an unhandled ORA-00904/ORA-02290 on every department or job change - a guaranteed, reproducible failure on routine HR transactions'"}
+      ],
+      "unknown_members": "TD-01..TD-10, TD-13..TD-32: content MISSING"
+    },
+    "cicd_maturity": {"present": 0, "total_capabilities": 14, "confidence": "HIGH", "evidence": "TA_Deep_Analysis.md summary: 'CI/CD maturity: 0 of 14 capabilities present - confirmed absent, not just unscanned'"},
+    "resolved_low_confidence_items": {"resolved_of_31": 2, "new_discrepancy_candidates": 1, "confidence": "HIGH", "evidence": "TA_Deep_Analysis.md summary"},
+    "sequence_orphan_candidate": {"id": "SEQ_EMP_NUMBER", "status": "possible orphan, unresolved", "confidence": "MEDIUM", "evidence": "TA_Deep_Analysis.md summary: '1 new discrepancy candidate raised (possible orphaned SEQ_EMP_NUMBER)'"}
+  },
+  "cross_links": [
+    {"id": "XLINK-001", "nodes": ["TBL-EMPLOYEES", "VS-01", "TRG-BEFORE-UPDATE", "PKG-EMPLOYEE"], "relationship": "Employee entity/table is the shared canonical node across Business (Employee Lifecycle value stream), Data (EMPLOYEES table), Technology (TRG_EMP_BEFORE_UPDATE), and Application (component graph) layers.", "confidence": "HIGH"},
+    {"id": "XLINK-002", "nodes": ["TBL-EMPLOYEE_HISTORY", "TRG-BEFORE-UPDATE", "TD-11", "TD-12"], "relationship": "Same structural defect independently confirmed by Data layer (escalated) and Technology layer (TD-11/TD-12) and referenced by Application layer diagrams - single canonical defect, not two.", "confidence": "HIGH"},
+    {"id": "XLINK-003", "nodes": ["VS-02", "PKG-AUDIT", "PP-leave-approval-gap"], "relationship": "Leave Request value stream links to the leave-status audit defect (Data layer) and the missing manager-approval-screen pain point (Business layer) - same functional area, different symptoms.", "confidence": "MEDIUM"},
+    {"id": "XLINK-004", "nodes": ["PKG-SECURITY", "NFR-SET"], "relationship": "Authentication bypass and hard-coded encryption key are security defects with no corresponding Business-layer capability or risk node in the provided BA summary - see OQ-011.", "confidence": "MEDIUM"}
+  ],
+  "assumptions": [
+    {"id": "ASMP-001", "statement": "System is an Oracle PL/SQL + Oracle Forms-based on-premises HR/Payroll application.", "confidence": "MEDIUM", "basis": "PKG_*.pkb naming, TRG_* naming, 'Application/Forms Libraries' layer label, ORA-00904/ORA-02290 error codes cited by TA."},
+    {"id": "ASMP-002", "statement": "The 30-table schema is the complete persisted data model with no additional hidden schemas.", "confidence": "LOW", "basis": "Asserted only by DA summary; not independently re-verified by this agent."},
+    {"id": "ASMP-003", "statement": "The six named value streams map 1:1 to six bounded contexts.", "confidence": "ASSUMED", "basis": "Structural convenience for domain modeling; BA summary did not state this correspondence explicitly."},
+    {"id": "ASMP-004", "statement": "No USER_CREDENTIALS or password table exists anywhere in the schema.", "confidence": "HIGH", "basis": "DA states this directly from code/schema review - treated as verified fact, not a soft assumption."},
+    {"id": "ASMP-005", "statement": "This system is a non-production / training / demo repository, which would explain leaving an authentication bypass and hard-coded encryption key unresolved.", "confidence": "ASSUMED", "basis": "Explicitly raised as an OPEN QUESTION by DA, not a confirmed fact - included here only to flag that Part 2 forward-engineering scope depends on this being resolved by stakeholders."}
+  ],
+  "normalization_log": [
+    {"id": "DISC-001", "description": "Hire-date threshold given as 90 days in one source and 180 days in another.", "layers": ["Business"], "status": "Unresolved", "confidence": "HIGH"},
+    {"id": "DISC-002", "description": "Leave-balance calculation formula diverges between two sources.", "layers": ["Business"], "status": "Unresolved", "confidence": "HIGH"},
+    {"id": "DISC-003", "description": "AA layer's own executive summary states 10 packages system-wide (Section 2) while APP-RISK-003 within the same document enumerates 11 distinct PKG_* names.", "layers": ["Application"], "status": "Unresolved - needs re-verification against database.json", "confidence": "HIGH"},
+    {"id": "DISC-004", "description": "component-view.mmd and dependency-view.mmd each draw a dependency edge (TRG_EMP_INSTEAD_OF_DELETE->EMPLOYEES, TRG_EMP_BEFORE_UPDATE->EMPLOYEES) not present in dependency-graph.json's edges array.", "layers": ["Application"], "status": "Unresolved", "confidence": "HIGH"},
+    {"id": "DISC-005", "description": "EMPLOYEES afferent-coupling count of 5 blends 4 real edges with 1 relationship the source prose itself calls 'indirect'.", "layers": ["Application"], "status": "Unresolved - metric methodology inconsistency", "confidence": "HIGH"},
+    {"id": "DISC-006", "description": "Original (Agent 1) severity characterization of the leave-status audit constraint violation as breaking leave approvals was downgraded by DA: PKG_AUDIT.log_action swallows the error, so leave workflows succeed but silently produce no audit entry.", "layers": ["Data"], "status": "Resolved by DA re-characterization", "confidence": "HIGH"},
+    {"id": "DISC-007", "description": "EMPLOYEE_HISTORY trigger defect was flagged independently by Data layer (escalated from Agent 1's 'wrong columns' note) and by Technology layer (TD-11/TD-12); these must be merged into ONE canonical defect node, not tracked as two separate findings.", "layers": ["Data", "Technology"], "status": "Merged in this synthesis (see XLINK-002)", "confidence": "HIGH"},
+    {"id": "DISC-008", "description": "AA was contractually required to produce an architecture-output/final/ file tree; instead everything was consolidated into one file at the repo root (self-acknowledged by AA Agent 1).", "layers": ["Application"], "status": "Unresolved - structural non-compliance", "confidence": "HIGH"},
+    {"id": "DISC-009", "description": "BA's entity/state/domain model was reconstructed directly from the schema rather than taken from Agent 1's full output files (which were not handed off in full, only a summary paragraph) - risk that BA's naming conventions diverge from Agent 1's original naming.", "layers": ["Business"], "status": "Unresolved (tracked as VQ-09 in Business layer)", "confidence": "MEDIUM"}
+  ],
+  "open_questions": [
+    {"id": "OQ-001", "question": "Do the authentication bypass (PKG_SECURITY.authenticate) and the hard-coded SSN encryption key reflect an intentionally-flawed training repo, or an actual production security concern requiring immediate remediation?", "owner_layer": "Data", "status": "Open - DA's top Gate G1 question"},
+    {"id": "OQ-002", "question": "What is the true count of PKG_* packages system-wide - 10 or 11?", "owner_layer": "Application", "status": "Open - needs re-verification against database.json"},
+    {"id": "OQ-003", "question": "What is the full text/content of BR-01 through BR-32?", "owner_layer": "Business", "status": "Open - not provided in available handoff"},
+    {"id": "OQ-004", "question": "What is the full text/content of TD-01 through TD-32 (beyond TD-11/TD-12)?", "owner_layer": "Technology", "status": "Open - not provided"},
+    {"id": "OQ-005", "question": "What is the full text/content of AP-01 through AP-21 and NFR-01 through NFR-03?", "owner_layer": "Technology", "status": "Open - not provided"},
+    {"id": "OQ-006", "question": "What are the names, columns, and relationships of the remaining 28 of 30 tables in the schema?", "owner_layer": "Data", "status": "Open - not provided"},
+    {"id": "OQ-007", "question": "What are the remaining 4 of 5 DA open questions for Gate G1?", "owner_layer": "Data", "status": "Open - only 1 of 5 was named in the summary"},
+    {"id": "OQ-008", "question": "Is SEQ_EMP_NUMBER a confirmed orphaned sequence, or a false positive?", "owner_layer": "Technology", "status": "Open"},
+    {"id": "OQ-009", "question": "Does BA's independently reconstructed entity/state/domain model match Agent 1's original naming convention, or has drift been introduced?", "owner_layer": "Business", "status": "Open (= VQ-09)"},
+    {"id": "OQ-010", "question": "What are the remaining 12 of 13 pain points and all 7 automation opportunities in detail?", "owner_layer": "Business", "status": "Open - not provided"},
+    {"id": "OQ-011", "question": "Should the authentication bypass and hard-coded encryption key be surfaced as a Business-layer risk/capability gap? The BA summary makes no mention of these Data-layer security defects.", "owner_layer": "Cross-layer (Business + Data)", "status": "Open - raised by this synthesis, not by any single layer"},
+    {"id": "OQ-012", "question": "What are the contents of the 6 remaining modules' names (of 13) and why do 6 of 13 modules have zero COMP-xxx component-registry entries?", "owner_layer": "Application", "status": "Open"}
+  ]
+}
+```

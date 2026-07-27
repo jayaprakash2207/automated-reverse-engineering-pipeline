@@ -1,0 +1,14 @@
+[
+  "README.md",
+  "forms/libraries/HRMS_COMMON_LIB.pll.sql",
+  "forms/libraries/HRMS_VALIDATION_LIB.pll.sql",
+  "forms/xml-exports/HRMS_LOGIN.xml",
+  "plsql/triggers/trg_audit.sql",
+  "plsql/triggers/trg_employees.sql",
+  "schema/tables/01_core_tables.sql",
+  "schema/tables/02_payroll_tables.sql",
+  "schema/tables/03_leave_tables.sql",
+  "schema/tables/04_performance_tables.sql",
+  "schema/views/hrms_views.sql",
+  "schema/sequences/hrms_sequences.sql"
+]

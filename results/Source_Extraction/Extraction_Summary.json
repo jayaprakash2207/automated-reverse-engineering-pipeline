@@ -1,0 +1,36 @@
+{
+  "extraction_date": "2026-07-23T13:30:37.701748+00:00",
+  "source": "C:\\Users\\brian roy\\Downloads\\updated-fwd-new-arc-main 1 last\\updated-fwd-new-arc-main 1\\updated-fwd-new-arc-main\\source\\ts-plsql-oracle-forms-hrms",
+  "source_type": "local",
+  "language": "plsql",
+  "total_methods": 0,
+  "total_classes": 0,
+  "total_interfaces": 0,
+  "total_enums": 0,
+  "total_business_artifacts": 145,
+  "total_db_objects": 42,
+  "total_config_params": 0,
+  "total_business_params": 0,
+  "total_feature_flags": 0,
+  "log_events_found": 0,
+  "process_sequences": 0,
+  "business_categories": {
+    "process": 17,
+    "data_operation": 17,
+    "validation": 21,
+    "general": 28,
+    "calculation": 10,
+    "integration": 2,
+    "approval": 13,
+    "notification": 1,
+    "authentication": 3,
+    "trigger_logic": 33
+  },
+  "output_files": {
+    "source_code": "C:\\Users\\brian roy\\Downloads\\updated-fwd-new-arc-main 1 last\\updated-fwd-new-arc-main 1\\updated-fwd-new-arc-main\\results\\Source_Extraction\\Source_Code.json",
+    "database": "C:\\Users\\brian roy\\Downloads\\updated-fwd-new-arc-main 1 last\\updated-fwd-new-arc-main 1\\updated-fwd-new-arc-main\\results\\Source_Extraction\\Database.json",
+    "config": "C:\\Users\\brian roy\\Downloads\\updated-fwd-new-arc-main 1 last\\updated-fwd-new-arc-main 1\\updated-fwd-new-arc-main\\results\\Source_Extraction\\Config.json",
+    "logs": "C:\\Users\\brian roy\\Downloads\\updated-fwd-new-arc-main 1 last\\updated-fwd-new-arc-main 1\\updated-fwd-new-arc-main\\results\\Source_Extraction\\Logs.json"
+  },
+  "ready_for_layer2": true
+}
