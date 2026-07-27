@@ -53,36 +53,74 @@ Point this pipeline at **any legacy codebase** — a GitHub URL or a local folde
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Step 1 — Install dependencies
 
 ```bash
-# Python 3.9+
-python --version
-
-# Node.js 18+ (for Claude Code CLI)
-node --version
-
-# Install Python dependencies
 pip install -r requirements.txt
+```
 
-# Install Claude Code CLI
+```bash
 npm install -g @anthropic-ai/claude-code
+```
 
-# Sign in to Claude
+```bash
 claude login
 ```
 
-### Run Against Any Codebase
+---
 
+### Step 2 — Run Reverse Engineering (~1.5 hours)
+
+**From a local folder:**
 ```bash
-# From a GitHub URL
-python run.py --source "https://github.com/org/your-legacy-app" --output ./results
-
-# From a local folder
 python run.py --source "C:/projects/my-legacy-app" --output ./results
 ```
 
-That's it. Come back in ~1.5 hours to find 25 documents and a full Enterprise Knowledge Graph in `./results/`.
+**From a GitHub URL:**
+```bash
+python run.py --source "https://github.com/org/your-legacy-app" --output ./results
+```
+
+Produces 25 documents + Enterprise Knowledge Graph in `./results/`.
+
+---
+
+### Step 3 — Run Forward Engineering (~6–10 hours)
+
+```bash
+cd forward-engineering-only
+```
+
+**Batch 1** — stack selection, conventions contract, scaffold, sprint planning (~45 min):
+```bash
+python run_forward.py --input ../results --output ./forward_results
+```
+
+> Batch 1 automatically chains into Batch 2. To run them separately, use `--no-auto-batch2`.
+
+**Batch 2** — per-sprint development loop, 6 sprints (~6–10 hours):
+```bash
+python run_forward_batch2.py --input ../results --output ./forward_results
+```
+
+**Skip the interactive stack menu** (use this exact stack):
+```bash
+python run_forward.py --input ../results --output ./forward_results --target-stack "Backend: Java 17, Spring Boot 3.x | Frontend: React (TypeScript) | Database: PostgreSQL"
+```
+
+Generated application code is written to `forward_results/new_app/`.
+
+---
+
+### Step 4 — Resume After Interruption
+
+The pipeline is fully resume-safe. If it stops for any reason, just re-run the same command:
+```bash
+python run_forward_batch2.py --input ../results --output ./forward_results
+```
+It continues from the last completed sprint step — nothing is lost.
+
+**If a sprint is stuck (`FAILED_BLOCKED`)**, edit `forward_results/sprint_ledger.json`, change the status to `PENDING`, then re-run.
 
 ---
 
