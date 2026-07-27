@@ -44,6 +44,20 @@ Only read raw source files directly for: migration file chronological ordering, 
 
 ---
 
+## Completeness Rules — MANDATORY
+
+- **EVERY table must have its FULL column list** — column name, data type, nullable, default, constraints. Never say "columns omitted for brevity".
+- **EVERY foreign key** — table, column, referenced table, ON DELETE/UPDATE rule.
+- **EVERY index** — name, table, columns, unique flag.
+- **EVERY sequence** — name, start value, increment, used by which table.
+- **EVERY view** — name and full definition.
+- **EVERY trigger** — name, table, timing (BEFORE/AFTER), event (INSERT/UPDATE/DELETE), and full body — the business rule IS in the body.
+- **EVERY PL/SQL procedure that touches data** — extract the actual SQL query or DML, not just the procedure name.
+- **STATE TOTALS in your output header** — e.g. "Found: 30 tables, 247 columns, 18 FK relationships, 11 triggers". For a full HRMS expect 25-40 tables. If count is under 10, you missed schema files.
+- **MARK MISSING only when genuinely absent** — if a column is in the schema file you received, list it.
+
+---
+
 ## Steps
 
 **Phase 0 — Auto-Detection** *(always first, no files opened yet)*

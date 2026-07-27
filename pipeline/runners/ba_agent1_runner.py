@@ -51,18 +51,6 @@ You are BA Agent 1 — Business Structure Scout.
 The file contents you requested are provided below (extracted from the deep scan).
 Now perform your full analysis and produce BA_Structural_Scout.md.
 
-COMPLETENESS RULES — you MUST follow these:
-- List EVERY entity/table found — do not summarise or say "and others".
-- List EVERY business state value verbatim — do not collapse or rename states.
-- List EVERY PL/SQL package procedure that implements business logic.
-- List EVERY Oracle Form as a UI boundary with its triggers and buttons.
-- For business rules: extract the EXACT threshold values, not paraphrases.
-  E.g. "hire_date must be within 180 days" not "hire date validation applies".
-- Mark MISSING only when the information genuinely does not exist in the files —
-  not because it would take effort to extract. If it is in the file, extract it.
-- Count how many entities, states, packages, and procedures you found.
-  State these counts in your output header.
-
 """
 
 

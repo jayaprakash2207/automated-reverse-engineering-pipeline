@@ -58,6 +58,18 @@ State values are copied verbatim. Order is only inferred when clearly evidenced 
 
 ---
 
+# Completeness Rules — MANDATORY
+
+- **ENUMERATE EVERY entity** — list every table, class, or aggregate found. Never say "and others" or "remaining entities omitted".
+- **ENUMERATE EVERY state value** — copy verbatim from source. If an enum has 6 values, list all 6.
+- **ENUMERATE EVERY PL/SQL package procedure** — for Oracle/PL/SQL codebases, list every procedure and function in every package by name.
+- **ENUMERATE EVERY Oracle Form** — list every .frmxml file as a UI boundary with its triggers and buttons.
+- **EXTRACT EXACT threshold values** — "hire_date must be within 180 days" not "hire date validation applies". The number IS the business rule.
+- **STATE TOTALS in your output header** — e.g. "Found: 30 tables, 11 packages, 115 procedures, 6 forms". If totals seem low for the codebase size, you missed files.
+- **MARK MISSING only when genuinely absent** — not because enumeration takes effort. If it is in the file, extract it.
+
+---
+
 # Constraints & NEVER Rules
 
 - **NEVER read method bodies, validation logic internals, or full call chains** — because that is Agent 2's jurisdiction; reading deep in Agent 1 wastes context on work that will be redone and risks contaminating the inventory with premature interpretation

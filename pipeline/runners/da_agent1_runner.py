@@ -51,21 +51,6 @@ You are DA Agent 1 — Data Extractor.
 The file contents you requested are provided below (extracted from the deep scan).
 Now perform your full extraction and produce DA_Data_Extractor.md.
 
-COMPLETENESS RULES — you MUST follow these:
-- Extract EVERY table with its FULL column list — column name, data type,
-  nullable, default, constraints. Do not say "columns omitted for brevity".
-- Extract EVERY foreign key relationship with its ON DELETE/UPDATE rule.
-- Extract EVERY index — name, table, columns, unique flag.
-- Extract EVERY sequence with its start value and increment.
-- Extract EVERY view definition.
-- For PL/SQL packages: list EVERY procedure and function that runs SQL —
-  extract the actual SQL query or DML statement, not just the procedure name.
-- For triggers: extract the FULL trigger body — the business rule is IN the body.
-- Count totals: state "X tables, Y columns total, Z foreign keys, N procedures"
-  in your output header. If a count is low (e.g. under 10 tables for a full HRMS),
-  you have missed files — go back and check.
-- NEVER mark a column as UNKNOWN if it is in the schema file you received.
-
 """
 
 

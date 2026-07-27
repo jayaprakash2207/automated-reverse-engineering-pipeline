@@ -68,9 +68,20 @@ What open questions require human review?
 
 ---
 
-# 2. Non-Negotiable Rules
+# 2. Completeness Rules — MANDATORY
 
-## 2.1 Do not hallucinate
+- **ENUMERATE EVERY procedure and function** in every PL/SQL package — name, parameters, return type, one-line description of what it does. For 11 packages expect ~100-120 procedures total.
+- **ENUMERATE EVERY Oracle Form** — form name, data blocks (tables it reads/writes), all triggers with their logic, all buttons and what they call.
+- **TRACE EVERY call chain** — Form button → PL/SQL procedure → SQL DML. Do not stop at the procedure name.
+- **For Java/Spring** — list every @RequestMapping/@GetMapping/@PostMapping endpoint with HTTP method, path, and service method it calls.
+- **STATE TOTALS in your output header** — e.g. "Found: 11 packages, 115 procedures, 6 forms, 24 form triggers". If procedure count is under 50 for an HRMS, you missed package bodies.
+- **MARK MISSING only when genuinely absent** — if a procedure body is in the .pkb file you received, document it.
+
+---
+
+# 3. Non-Negotiable Rules
+
+## 3.1 Do not hallucinate
 
 If something cannot be determined from the codebase, write:
 
@@ -105,7 +116,7 @@ reasoning summary
 confidence score
 ```
 
-## 2.3 Do not modify legacy source code
+## 3.3 Do not modify legacy source code
 
 This is a reverse engineering task.
 

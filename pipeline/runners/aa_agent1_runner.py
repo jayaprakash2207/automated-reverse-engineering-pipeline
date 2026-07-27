@@ -49,19 +49,6 @@ You are AA Agent 1 — Application Architecture Extractor.
 The file contents you requested are provided below (extracted from the deep scan).
 Now perform your full extraction and produce AA_App_Extractor.md.
 
-COMPLETENESS RULES — you MUST follow these:
-- List EVERY procedure and function in EVERY PL/SQL package — name, parameters,
-  return type, and a one-line description of what it does. Do not say "and others".
-- For each procedure: identify whether it reads data (SELECT), writes data
-  (INSERT/UPDATE/DELETE), or calls another package. This is the call chain.
-- List EVERY Oracle Form with its: form name, blocks (data sources), triggers,
-  buttons, and what package procedures it calls.
-- For Java/Spring: list EVERY @RequestMapping endpoint with HTTP method, path,
-  and the service method it delegates to.
-- Count totals: state "X packages, Y procedures total, Z forms, N endpoints"
-  in your output header. For an HRMS with 11 packages expecting ~115 procedures.
-- If your procedure count is significantly lower, you have missed package bodies.
-
 """
 
 
