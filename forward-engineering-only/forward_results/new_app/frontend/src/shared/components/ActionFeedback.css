@@ -1,0 +1,31 @@
+.action-feedback {
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.action-feedback--pending {
+  background: #f0f0f0;
+}
+
+.action-feedback--success {
+  background: #e6f4ea;
+  border: 1px solid #34a853;
+}
+
+.action-feedback__audit-id {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.action-feedback--validation,
+.action-feedback--system-error {
+  background: #fdecea;
+  border: 1px solid #d93025;
+}
+
+.action-feedback__trace-id {
+  font-family: monospace;
+  font-size: 0.85rem;
+}

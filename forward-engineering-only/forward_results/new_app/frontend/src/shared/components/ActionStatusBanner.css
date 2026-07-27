@@ -1,0 +1,29 @@
+.action-status {
+  border-radius: 4px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.action-status--success {
+  background-color: #e6f4ea;
+  border: 1px solid #34a853;
+  color: #1e4620;
+}
+
+.action-status--validation {
+  background-color: #fdecea;
+  border: 1px solid #e57373;
+  color: #611a15;
+}
+
+.action-status--system {
+  background-color: #fdecea;
+  border: 1px solid #b3261e;
+  color: #601410;
+}
+
+.action-status__trace {
+  font-family: monospace;
+  font-size: 0.75rem;
+}

@@ -1,0 +1,207 @@
+```css
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+a,
+button {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #1a5fb4;
+  outline-offset: 2px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.employee-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin: 1rem 0;
+}
+
+.employee-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.employee-table th,
+.employee-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #d0d0d0;
+}
+
+.employee-table__row {
+  cursor: pointer;
+}
+
+.employee-table__row:hover,
+.employee-table__row:focus-visible {
+  background-color: #f0f4fa;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.status-badge--active {
+  background-color: #e3f6e8;
+  color: #1c6b34;
+}
+
+.status-badge--on_leave {
+  background-color: #fff3d6;
+  color: #8a5a00;
+}
+
+.status-badge--terminated {
+  background-color: #fbe3e3;
+  color: #942828;
+}
+
+.action-banner {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin: 0.75rem 0;
+}
+
+.action-banner--pending {
+  background-color: #eef2f7;
+}
+
+.action-banner--success {
+  background-color: #e3f6e8;
+  color: #1c6b34;
+}
+
+.action-banner--validation {
+  background-color: #fff3d6;
+  color: #8a5a00;
+}
+
+.action-banner--system {
+  background-color: #fbe3e3;
+  color: #942828;
+}
+
+.action-banner__trace code {
+  user-select: all;
+}
+
+.field-error {
+  color: #942828;
+  font-size: 0.875rem;
+  margin: 0.15rem 0 0;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  width: min(90vw, 480px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.employee-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+
+.employee-profile dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.employee-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.history-timeline {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-timeline__entry {
+  border-left: 3px solid #1a5fb4;
+  padding-left: 0.75rem;
+}
+
+.history-timeline__meta {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+```
+
+That's the full frontend for this sprint. Summary of what was built and key decisions:
+
+- **Scope**: Employee list/search/pagination, employee detail with history timeline, create-employee flow, and the transfer/promote/terminate/rehire lifecycle actions — plus a minimal login screen, since every employee endpoint sits behind JWT auth per the contract. Leave-approval (Doc 20 §2) and the provisional-banner screens (§5) belong to other bounded contexts and were intentionally left out.
+- **Wire vs. domain types**: `application.yml` sets `spring.jackson.property-naming-strategy: SNAKE_CASE`, so `employeeApiTypes.ts` models the raw snake_case JSON and `mappers.ts` converts to camelCase domain types — no snake_case leaks past the API layer.
+- **Three-state action contract (Doc 20 §3)**: `ActionState<T>` + `ActionResultBanner` give every lifecycle action and employee creation exactly success / validation-failure / system-failure rendering, with trace IDs surfaced on system failures and the form left open/retryable rather than freezing.
+- **Auth UX (Doc 20 §4)**: explicit 401 vs. account-lockout messaging, no email-only login shortcut, tokens kept in `sessionStorage` (documented tradeoff, no BFF/cookie layer in this sprint).
+- **Assumptions flagged in comments**: no `AuthController` or field-validation-error shape was in the provided backend file list, so `/auth/login` and `field_errors` are inferred from the contract's own conventions, not confirmed against real backend code — worth reconciling once those land.
+- Tests (Jest + RTL, contract row 7) cover the list page's success/error rendering, the lifecycle modal's all three outcome states, and the login page's failure/lockout states.

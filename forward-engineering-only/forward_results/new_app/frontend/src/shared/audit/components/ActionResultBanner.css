@@ -1,0 +1,40 @@
+.action-result-banner {
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  border: 1px solid transparent;
+}
+
+.action-result-banner--success {
+  background: #e6f4ea;
+  border-color: #b7dfc3;
+  color: #1e4620;
+}
+
+.action-result-banner--validation {
+  background: #fff4e5;
+  border-color: #f5cf87;
+  color: #7a4a00;
+}
+
+.action-result-banner--system {
+  background: #fdecea;
+  border-color: #f5c2c0;
+  color: #611a15;
+}
+
+.action-result-banner__audit-id {
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.action-result-banner__trace {
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.action-result-banner__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}

@@ -1,0 +1,46 @@
+/*
+  Minimal functional baseline only — no color/typography/spacing design
+  system. UI/UX Spec (Doc 20) §7 explicitly puts the visual design system out
+  of scope for this synthesis; this file exists solely to keep the login form
+  usable and to give visible keyboard focus per the WCAG 2.1 AA baseline
+  assumed in Doc 20 §6.
+*/
+
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 2rem;
+}
+
+form > div {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+input {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+}
+
+:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+[role='alert'] {
+  color: #b3261e;
+  margin-top: 0.25rem;
+}

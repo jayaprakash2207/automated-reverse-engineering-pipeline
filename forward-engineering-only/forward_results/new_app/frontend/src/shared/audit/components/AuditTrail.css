@@ -1,0 +1,75 @@
+.audit-trail__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.audit-trail__table th,
+.audit-trail__table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #d0d5dd;
+}
+
+.audit-trail__caption {
+  text-align: left;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.audit-trail__error {
+  background: #fdecea;
+  border: 1px solid #f5c2c0;
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+
+.audit-trail__empty {
+  color: #475467;
+}
+
+.audit-trail__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.audit-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.audit-status-badge--success {
+  background: #e6f4ea;
+  color: #1e7a34;
+}
+
+.audit-status-badge--failure {
+  background: #fdecea;
+  color: #b3261e;
+}
+
+.audit-entry-row__before {
+  color: #b3261e;
+  text-decoration: line-through;
+}
+
+.audit-entry-row__after {
+  color: #1e7a34;
+}
+
+.audit-entry-row__details {
+  margin: 0.5rem 0;
+}
+
+.audit-entry-row__trace {
+  font-family: monospace;
+  color: #475467;
+}

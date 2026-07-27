@@ -1,0 +1,6 @@
+=== FILE: frontend/src/features/.gitkeep ===
+
+
+---
+
+Scaffold created: `backend/` (Maven, Spring Boot 3.3.5, Java 17, Spring Data JPA + Flyway + Spring Security baseline, health check at `/actuator/health`, a Testcontainers-Postgres smoke test), `frontend/` (Vite + React 18 + TypeScript, Jest + RTL wired per the contract's row 7, `src/shared`/`src/features` present but empty), plus a root `docker-compose.yml` for local Postgres and a `README.md` with setup/run instructions. No feature modules, entities, or business endpoints were pre-created, per contract §2.6/row 9 — those get added only as real `BR-*` requirements are confirmed. The placeholder Java package is `com.example.app`; rename it once the real org/app identifiers are confirmed.

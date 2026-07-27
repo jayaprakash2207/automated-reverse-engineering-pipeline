@@ -1,0 +1,27 @@
+.audit-feedback {
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.audit-feedback--pending {
+  background: #f2f2f2;
+  color: #444;
+}
+
+.audit-feedback--success {
+  background: #eaf7ec;
+  color: #1e7a32;
+  border: 1px solid #bfe6c6;
+}
+
+.audit-feedback--error {
+  background: #fdecec;
+  color: #a12622;
+  border: 1px solid #f3b7b4;
+}
+
+.audit-feedback__trace code {
+  font-family: monospace;
+}
