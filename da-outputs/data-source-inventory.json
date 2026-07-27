@@ -1,0 +1,38 @@
+{
+  "data_sources": [
+    {
+      "type": "RDBMS",
+      "engine": "Oracle Database 19c",
+      "schema": "HRMS",
+      "role": "System of record — sole data store for the application (no evidence of any secondary datastore, cache, or external DB in this codebase)",
+      "connection": "CODE-ONLY — no connection string found anywhere in Layer 1 config.json (connection_strings: []); no tnsnames.ora/docker-compose.yml in repo. Oracle Forms apps of this era typically resolve TNS aliases from an Oracle client install (tnsnames.ora) outside the source repo — not something a source-code scan can recover. UNKNOWN — reason: connection details live outside the scanned codebase (client-side TNS config, not app config).",
+      "access_pattern": "Oracle Forms 12c client (.fmb/.fmx) + PL/SQL packages, all direct SQL/PLSQL — no ORM, no repository layer, no data access abstraction",
+      "confidence": 0.9
+    },
+    {
+      "type": "Caching",
+      "finding": "NONE FOUND — no caching class, no Oracle Advanced Queuing, no in-memory cache, no Coherence/TimesTen references anywhere in the scanned source. PKG_EMPLOYEE does hold global package-level state variables (g_current_user, g_current_emp_id, g_current_dept_id) which act as a per-session cache of the logged-in user's identity, scoped to the Forms session's PL/SQL engine lifetime.",
+      "documented_in": "storage-pattern-analysis.md",
+      "confidence": 0.8
+    },
+    {
+      "type": "Queue / Async dispatch",
+      "table": "HRMS.NOTIFICATION_QUEUE",
+      "role": "Application-level queue table (STATUS: PENDING/SENT/FAILED/CANCELLED, RETRY_COUNT) — presumably polled by PKG_NOTIFICATION (body not scanned) and dispatched via UTL_MAIL/UTL_SMTP given SYSTEM_PARAMETERS has SMTP_HOST/FROM_ADDRESS entries",
+      "confidence": 0.75
+    },
+    {
+      "type": "External integration (outbound)",
+      "package": "PKG_INTEGRATION",
+      "finding": "Package exists (spec+body) but body was not read in this pass; SYSTEM_PARAMETERS seed shows GL_FEED_STATUS='ACTIVE' and BENEFITS_FEED_STATUS='ACTIVE', implying at least two outbound feeds (General Ledger, Benefits carrier) exist. No connection details, file paths, or protocol evidence found in scanned files.",
+      "confidence": "UNKNOWN — reason: PKG_INTEGRATION.pkb/.pks not read in this extraction pass; feed mechanism (file drop, DB link, web service) cannot be determined from files scanned so far"
+    },
+    {
+      "type": "Session store",
+      "table": "HRMS.USER_SESSIONS",
+      "role": "DB-table-backed session tracking for Oracle Forms client sessions (LOGIN_TIME/LOGOUT_TIME/IP_ADDRESS/FORMS_MODULE/SESSION_STATUS), read/written by PKG_SECURITY (is_session_valid, authenticate, logout)",
+      "confidence": 0.9
+    }
+  ],
+  "note_on_caching_cross_reference": "Per skill error-handling rule ('Caching class found in */Services* → document in BOTH data-source-inventory.json AND storage-pattern-analysis.md'): no Services-layer caching class exists in this codebase at all (it is Oracle Forms + PL/SQL, not a service-oriented app), so this rule does not apply structurally. The only 'caching' behavior is PKG_EMPLOYEE's session-scoped global variables, documented in both this file and storage-pattern-analysis.md."
+}

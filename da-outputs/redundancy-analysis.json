@@ -1,0 +1,50 @@
+{
+  "canonical_shadow_entity_checks": [
+    {
+      "concept": "Employee identity",
+      "canonical": "HRMS.EMPLOYEES (EMP_ID surrogate PK, EMP_NUMBER natural unique key)",
+      "shadow_representations_found": "NONE — every other table that references an employee (EMPLOYEE_HISTORY, EMPLOYEE_DEPENDENTS, EMERGENCY_CONTACTS, SALARY_RECORDS, EMPLOYEE_PAY_ELEMENTS, EMPLOYEE_TAX_INFO, EMPLOYEE_BANK_ACCOUNTS, LEAVE_BALANCES, LEAVE_REQUESTS, LEAVE_ACCRUAL_LOG, PERFORMANCE_REVIEWS, PERFORMANCE_GOALS, NOTIFICATION_QUEUE, USER_SESSIONS) does so via a proper FK (or, for NOTIFICATION_QUEUE, an undeclared-but-consistent EMP_ID column) to EMPLOYEES.EMP_ID — no loose string-based employee identifier (e.g. a bare 'emp_name' or duplicated employee sub-table) was found.",
+      "verdict": "No duplication — single source of truth, cleanly modeled.",
+      "confidence": 0.85
+    },
+    {
+      "concept": "Department",
+      "canonical": "HRMS.DEPARTMENTS (DEPT_ID)",
+      "shadow_representations_found": "NONE distinct — DEPT_ID is used consistently everywhere (EMPLOYEES, EMPLOYEE_HISTORY.OLD_DEPT_ID/NEW_DEPT_ID). LOOKUP_VALUES is a separate generic lookup table but no evidence it duplicates department data specifically (no seed rows for LOOKUP_VALUES were available to confirm what LOOKUP_TYPEs it actually stores).",
+      "verdict": "No duplication found for department specifically; LOOKUP_VALUES' actual contents are UNKNOWN (no seed data, DB not connected) so a shadow risk there cannot be fully ruled out — flagged for Agent 2.",
+      "confidence": 0.7
+    },
+    {
+      "concept": "Job / role classification",
+      "canonical": "HRMS.JOB_TITLES (JOB_ID) + HRMS.JOB_GRADES (GRADE_ID)",
+      "shadow_representations_found": "NONE",
+      "verdict": "Clean 1:N (JOB_TITLES → JOB_GRADES), no duplication.",
+      "confidence": 0.85
+    },
+    {
+      "concept": "Location",
+      "canonical": "HRMS.LOCATIONS (LOCATION_CODE, natural key)",
+      "shadow_representations_found": "Used consistently as a soft/FK reference from EMPLOYEES, DEPARTMENTS, HOLIDAYS. No duplicate location table found.",
+      "verdict": "No duplication.",
+      "confidence": 0.85
+    },
+    {
+      "concept": "Audit / change history",
+      "canonical": "AMBIGUOUS — two competing mechanisms exist for the same conceptual need",
+      "shadow_representations_found": "HRMS.AUDIT_LOG (generic, polymorphic TABLE_NAME/RECORD_ID, populated via PKG_AUDIT.log_action for SALARY_RECORDS/LEAVE_REQUESTS-status/DEPARTMENTS) **and** HRMS.EMPLOYEE_HISTORY (typed, employee-specific, populated via TRG_EMP_BEFORE_UPDATE for status/dept/job changes — though currently broken, see data-quality-report.md).",
+      "verdict": "This is a genuine canonical/shadow split, not a false positive: two different tables both try to answer 'what changed and when' for overlapping concerns (e.g. a department transfer touches both EMPLOYEE_HISTORY conceptually and would NOT touch AUDIT_LOG unless the DEPARTMENTS row itself changed). Neither is clearly canonical — EMPLOYEE_HISTORY has richer typed columns (OLD_SALARY/NEW_SALARY, OLD_MANAGER_ID/NEW_MANAGER_ID) suggesting design intent as the primary employee-change ledger, but it's the one that's currently broken by the trigger mismatch, while AUDIT_LOG is the one actually being written to successfully today (for the 3 tables its triggers cover). Recommend Agent 2 treat AUDIT_LOG as the de facto working audit trail and EMPLOYEE_HISTORY as an aspirational/broken secondary mechanism pending a fix.",
+      "confidence": 0.85
+    },
+    {
+      "concept": "Generic key-value / classification data",
+      "canonical": "UNCLEAR",
+      "shadow_representations_found": "HRMS.LOOKUP_VALUES (generic LOOKUP_TYPE/LOOKUP_CODE/LOOKUP_VALUE table) exists alongside several *purpose-built* enum-like tables that could conceptually have been LOOKUP_VALUES entries instead: LEAVE_TYPES, PAY_ELEMENTS, JOB_GRADES all model what are essentially typed reference lists, but each has its own dedicated table with its own extra business columns (accrual rules, salary bands, tax flags) rather than living in LOOKUP_VALUES.",
+      "verdict": "Not true duplication — the dedicated tables carry domain-specific columns LOOKUP_VALUES couldn't hold (e.g. JOB_GRADES.MIN_SALARY/MAX_SALARY), so this is appropriately-not-generic modeling, not a shadow entity. LOOKUP_VALUES appears reserved for simpler UI dropdown values (e.g. MARITAL_STATUS options, TERMINATION_REASON codes) which have no dedicated table of their own — a plausible, appropriate use, though unconfirmed since no LOOKUP_VALUES seed data exists.",
+      "confidence": 0.75
+    }
+  ],
+  "constructed_vs_defined_check": {
+    "note": "Per skill guidance: check whether each representation is actually constructed/queried anywhere, not just defined.",
+    "findings": "All 30 tables are referenced by at least one FK, trigger, view, or package signature seen in this scan except: TAX_BRACKETS (defined, has a CHK constraint, but no seed data and no scanned code path reads/writes it directly — presumably read by PKG_PAYROLL's tax calculation, unconfirmed since that body wasn't read), and LOOKUP_VALUES (defined, unique constraint present, but no seed data and no scanned reference to it from any trigger/view/package spec read so far). Both are flagged UNKNOWN-usage rather than confirmed-dead, since the packages most likely to touch them (PKG_PAYROLL, PKG_COMMON/PKG_VALIDATION for lookups) were not body-read in this pass."
+  }
+}

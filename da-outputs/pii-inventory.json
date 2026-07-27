@@ -1,0 +1,36 @@
+{
+  "db_connection": "CODE-ONLY — see schema-catalogue.json",
+  "pii_fields": [
+    {"table": "EMPLOYEES", "column": "SSN_ENCRYPTED", "classification": "SPI (Sensitive PII)", "protection": "AES-256 at rest per column comment; encrypt_ssn/decrypt_ssn confirmed present in PKG_SECURITY.pks spec", "confidence": 0.9, "note": "DBMS_CRYPTO key is documented as hard-coded in PKG_SECURITY package BODY (not scanned in this pass, called out in the package spec's own header comment as a known issue) — a hard-coded encryption key defeats the purpose of column-level encryption if the body/source ever leaks."},
+    {"table": "EMPLOYEES", "column": "DATE_OF_BIRTH", "classification": "PII", "protection": "None observed"},
+    {"table": "EMPLOYEES", "column": "EMAIL, PHONE_WORK, PHONE_MOBILE", "classification": "PII", "protection": "None observed; EMAIL also has no DB-level uniqueness constraint"},
+    {"table": "EMPLOYEES", "column": "ADDRESS_LINE1/2, CITY, STATE_PROVINCE, POSTAL_CODE, COUNTRY_CODE", "classification": "PII", "protection": "None observed"},
+    {"table": "EMPLOYEES", "column": "PHOTO_BLOB", "classification": "PII (biometric-adjacent)", "protection": "None observed — raw BLOB on the master table, no separate access-controlled storage"},
+    {"table": "EMPLOYEES", "column": "GENDER, MARITAL_STATUS, NATIONALITY", "classification": "Sensitive demographic PII", "protection": "None observed"},
+    {"table": "EMPLOYEE_DEPENDENTS", "column": "SSN_ENCRYPTED, DATE_OF_BIRTH", "classification": "SPI — third-party (dependents are not the primary data subject/employee)", "protection": "Same AES-256/PKG_SECURITY mechanism presumed, not independently confirmed for this table"},
+    {"table": "EMERGENCY_CONTACTS", "column": "CONTACT_NAME, PHONE_PRIMARY/SECONDARY, EMAIL", "classification": "PII — third-party", "protection": "None observed"},
+    {"table": "EMPLOYEE_BANK_ACCOUNTS", "column": "ROUTING_NUMBER, ACCOUNT_NUMBER_ENC", "classification": "Financial PII", "protection": "ACCOUNT_NUMBER_ENC name implies encryption; mechanism not confirmed (no encrypt/decrypt function for bank accounts found in PKG_SECURITY spec — only encrypt_ssn/decrypt_ssn exist). ROUTING_NUMBER is stored in plaintext (not itself sensitive in isolation, but combined with ACCOUNT_NUMBER_ENC it completes a payment credential).", "confidence": "UNKNOWN — reason: no PKG_SECURITY function targets bank account numbers specifically; encryption mechanism for this column is unconfirmed"},
+    {"table": "SALARY_RECORDS", "column": "BASE_SALARY", "classification": "Sensitive financial PII", "protection": "None observed at column level; access presumably gated by PKG_SECURITY.has_permission at the module/form level, not row/column level"},
+    {"table": "EMPLOYEE_TAX_INFO", "column": "FILING_STATUS, ADDITIONAL_FED_WH, ADDITIONAL_STATE_WH", "classification": "Tax PII", "protection": "None observed"},
+    {"table": "USER_SESSIONS", "column": "IP_ADDRESS, USERNAME", "classification": "PII (login metadata)", "protection": "None observed"},
+    {"table": "AUDIT_LOG", "column": "IP_ADDRESS, OLD_VALUES/NEW_VALUES (CLOB)", "classification": "PII (may transitively contain any of the above fields as JSON snapshots)", "protection": "None observed — audit JSON built via manual string concatenation in triggers (TRG_SALARY_AUDIT), not a JSON-safe serializer, so malformed/injected content is a data-quality risk more than a security one given values are numeric/date here"}
+  ],
+  "authentication_credentials": {
+    "table": "not a dedicated table — password hash presumed stored in EMPLOYEES or a table not yet scanned",
+    "mechanism": "PKG_SECURITY.hash_password — package header comment explicitly states 'Password stored as MD5 hash (should be bcrypt/scrypt)'",
+    "classification": "Critical security finding",
+    "confidence": 0.9,
+    "note": "MD5 is not a suitable password hash (no salt semantics guaranteed, fast to brute-force). This is a self-documented known issue in the source, not an inference."
+  },
+  "retention_policy": {
+    "table": "AUDIT_LOG",
+    "mechanism": "PKG_AUDIT.purge_old_records(p_days_to_keep IN NUMBER DEFAULT 365)",
+    "classification": "Documented retention default — 365 days for audit trail",
+    "confidence": 0.9,
+    "note": "No scheduler (DBMS_SCHEDULER job) confirming this runs automatically was found in scanned files — retention is a callable default, not a confirmed enforced policy. See hidden-business-rules.json."
+  },
+  "gdpr_ccpa_relevant_gaps": [
+    "No soft-delete/anonymization path evident for terminated employees' PII — TRG_EMP_INSTEAD_OF_DELETE blocks ALL physical deletes unconditionally, meaning employee PII (SSN, DOB, bank accounts, address) is retained indefinitely with no purge mechanism, which may conflict with a right-to-erasure obligation depending on jurisdiction.",
+    "EMPLOYEE_DEPENDENTS and EMERGENCY_CONTACTS store third-party PII (spouses, children, emergency contacts) with no independent consent/retention tracking — these individuals are not employees and have no login/session record of their own."
+  ]
+}

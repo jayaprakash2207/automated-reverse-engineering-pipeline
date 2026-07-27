@@ -1,0 +1,60 @@
+{
+  "context": "This repo has no versioned migration framework (Flyway/Liquibase/EF migrations) — schema/tables/*.sql is a single monolithic DDL set, not incremental migrations. 'Migration complexity' here is scored as effort-to-modernize (per README.md's own stated purpose: 'designed for modernization analysis and migration workshops'), not migration-script chronology.",
+  "db_connection": "CODE-ONLY — see schema-catalogue.json",
+  "overall_complexity": "HIGH",
+  "overall_rationale": "Business logic is split three ways with no clean boundary (Forms client triggers, PL/SQL packages, DB triggers) — README self-documents this as known technical debt. Several cross-file defects (broken EMPLOYEE_HISTORY insert, seed/DDL drift, audit check-constraint mismatch) mean the current codebase does not even run cleanly as-is, which must be resolved before any migration, not during it.",
+  "domain_scores": [
+    {
+      "domain": "Core HR (EMPLOYEES + org structure)",
+      "complexity": "HIGH",
+      "reasons": [
+        "EMPLOYEES is the central table with 4+ FKs, a self-referencing manager hierarchy, BLOB/CLOB columns (PHOTO_BLOB, NOTES), and encrypted PII (SSN_ENCRYPTED) whose decryption logic lives in an unread PL/SQL package body — migrating this table means re-implementing PKG_SECURITY.decrypt_ssn's algorithm faithfully or re-encrypting all data",
+        "TRG_EMP_BEFORE_UPDATE's broken EMPLOYEE_HISTORY insert must be fixed/understood before the audit trail can be trusted as a migration source",
+        "VW_ORG_HIERARCHY has a self-documented performance warning ('degrades significantly with >500 employees') via CONNECT BY — a modernized platform needs a different hierarchy strategy (closure table, recursive CTE, or materialized path)"
+      ]
+    },
+    {
+      "domain": "Payroll",
+      "complexity": "HIGH",
+      "reasons": [
+        "PKG_PAYROLL body (unscanned) almost certainly contains the actual tax/deduction calculation formulas (TAX_BRACKETS, PAY_ELEMENTS.CALCULATION_TYPE='FORMULA') — this business logic is the highest-risk item to port incorrectly",
+        "Circular package dependency between PKG_EMPLOYEE and PKG_PAYROLL (self-documented in PKG_EMPLOYEE.pks header) complicates any incremental/strangler-fig migration approach",
+        "VW_PAYROLL_LATEST's single-global-latest-run assumption is a design bug that would need a decision (fix vs. preserve-as-is) before porting",
+        "Bank account encryption mechanism for ACCOUNT_NUMBER_ENC is unconfirmed (no matching PKG_SECURITY function) — needs body-level investigation before any data migration touching payroll direct-deposit"
+      ]
+    },
+    {
+      "domain": "Leave Management",
+      "complexity": "MEDIUM",
+      "reasons": [
+        "Fairly self-contained (LEAVE_TYPES/LEAVE_BALANCES/LEAVE_REQUESTS/LEAVE_ACCRUAL_LOG/HOLIDAYS), few external FKs besides EMPLOYEES",
+        "Generated column formula (LEAVE_BALANCES.AVAILABLE) vs. VW_LEAVE_SUMMARY's diverging hand-rolled formula must be reconciled — pick one formula as canonical during migration, don't port both",
+        "Accrual batch mechanism is unscanned/unconfirmed — migration must first discover whether this is a DB job, an OS-level scheduled task, or triggered by Forms"
+      ]
+    },
+    {
+      "domain": "Performance Reviews",
+      "complexity": "LOW-MEDIUM",
+      "reasons": [
+        "Straightforward parent-child structure (REVIEW_CYCLES → PERFORMANCE_REVIEWS → PERFORMANCE_GOALS)",
+        "Heavy CLOB usage (SELF_ASSESSMENT, MANAGER_ASSESSMENT, STRENGTHS, etc.) — free-text fields port cleanly to any modern text/JSON column",
+        "UI/DB mismatch on GOAL_CATEGORY poplist (Forms only offers 3 of 5 valid values) needs a product decision, not just a technical port"
+      ]
+    },
+    {
+      "domain": "Cross-cutting (Audit, Security, Notifications, Sessions, Lookups)",
+      "complexity": "MEDIUM-HIGH",
+      "reasons": [
+        "PKG_SECURITY's MD5 password hashing and hard-coded DBMS_CRYPTO key are security defects that should be fixed during migration, not carried forward — but doing so requires a password-reset/re-encryption migration step for all existing users, which is itself operationally complex",
+        "AUDIT_LOG's ACTION_TYPE check-constraint mismatch with the STATUS_CHANGE audit call must be resolved (constraint or caller) before the audit trail is trustworthy",
+        "No ROLE/PERMISSION table exists in the schema — access control appears to be hard-coded inside PKG_SECURITY.has_permission's body (unscanned), which is a migration blind spot: the actual authorization rules are not visible in any table, DDL, or Forms XML scanned so far"
+      ]
+    }
+  ],
+  "pre-migration_blockers": [
+    "Fix or explain the EMPLOYEE_HISTORY column/constraint mismatch (currently blocks all employee status/dept/job updates)",
+    "Fix or explain the seed-vs-DDL column mismatches (LOCATIONS.PHONE, JOB_GRADES.GRADE_LEVEL/GRADE_CODE, SYSTEM_PARAMETERS.DESCRIPTION)",
+    "Resolve the AUDIT_LOG.ACTION_TYPE vs. 'STATUS_CHANGE' constraint conflict",
+    "Read PKG_SECURITY.pkb, PKG_PAYROLL.pkb, PKG_LEAVE.pkb, PKG_INTEGRATION.pkb bodies — the actual business rules (encryption, tax calculation, accrual, external feeds) live there, not in the schema or Forms XML"
+  ]
+}
