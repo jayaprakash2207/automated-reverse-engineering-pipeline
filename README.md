@@ -6,9 +6,10 @@
 
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Claude AI](https://img.shields.io/badge/Claude-AI%20Agents-D97706?style=for-the-badge&logo=anthropic&logoColor=white)](https://anthropic.com)
-[![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org)
+[![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
 [![License](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -31,7 +32,7 @@ Point this pipeline at **any legacy codebase** — a GitHub URL or a local folde
 
 1. **25 architecture documents** — BRD, ERD, API contracts, security architecture, domain model, and more
 2. **An Enterprise Knowledge Graph** — every entity, service, API, and table, cross-linked and evidence-cited
-3. **A working modern application** — Java 21 + Spring Boot backend, React 18 + TypeScript frontend, generated sprint by sprint
+3. **A working modern application** — Java 17 + Spring Boot 3 backend, React 18 + TypeScript frontend, PostgreSQL database — generated sprint by sprint
 
 <br/>
 
@@ -122,10 +123,13 @@ The pipeline runs **13 sequential steps** across two phases.
 │  Batch 1 ──► Stack Selection → Stack Mapping Contract → Scaffolding     │
 │              → Sprint Planning (ordered backlog with rationale)         │
 │                                                                         │
-│  Batch 2 ──► Per-Sprint Development Loop:                               │
+│  Batch 2 ──► Per-Sprint Development Loop (× 6 sprints):                 │
 │              Backend Dev → Security Review → Frontend Dev               │
 │              → Test Writer → Test Executor (real subprocess, no LLM)   │
 │              → 3-Reviewer Code Review → Fix Loop → Learnings write-back │
+│                                                                         │
+│  Sprints: Security/Identity → Employee Management → Leave Management    │
+│           → Payroll → Performance Reviews → Audit Logging (cross-cut)  │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -141,7 +145,19 @@ Every analysis agent uses a unique two-turn design that maximises efficiency:
 
 ### Resume-Safe by Design
 
-Every step writes its output to disk immediately. Kill the process at any time — re-run the same command and it continues exactly where it stopped.
+Every step writes its output to disk immediately. Kill the process at any time — re-run the same command and it continues exactly where it stopped. Each sprint is checkpointed independently so a crash never loses completed work.
+
+### Generated Tech Stack
+
+When run against the included Oracle HRMS sample, the pipeline selected:
+
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Java 17, Spring Boot 3.x |
+| **Frontend** | React 18, TypeScript |
+| **Database** | PostgreSQL 15 (migrated off Oracle) |
+| **Auth** | JWT with refresh tokens, AES-256 encryption |
+| **Testing** | JUnit 5 + Testcontainers (backend), Jest + React Testing Library (frontend) |
 
 ---
 
@@ -204,6 +220,38 @@ results/
 
 **Total: 25 documents + 1 Enterprise Knowledge Graph + 5 foundation views**
 
+### Forward Engineering Output
+
+After Batch 2 completes, `forward_results/new_app/` contains a fully buildable application:
+
+```
+forward_results/new_app/
+│
+├── backend/                          ← Spring Boot 3 Java application
+│   ├── pom.xml
+│   └── src/main/java/com/example/app/
+│       ├── security/                 ← JWT auth, refresh tokens, AES-256 encryption
+│       ├── employee/                 ← Full employee lifecycle management
+│       ├── leave/                    ← Leave requests, approvals, balance tracking
+│       ├── payroll/                  ← Pay periods and payroll run management
+│       ├── performance/              ← Review cycles and individual assessments
+│       └── audit/                    ← Tamper-evident audit logging (cross-cutting)
+│
+├── frontend/                         ← React 18 + TypeScript application
+│   ├── src/features/                 ← One folder per sprint (auth, employee, leave...)
+│   └── src/shared/                   ← Shared API client, auth context, components
+│
+└── backend/src/main/resources/db/migration/
+    ├── V1.1__create_user_credentials.sql
+    ├── V1.2__create_refresh_tokens.sql
+    ├── V1.3__create_employees.sql
+    ├── V1.5__create_leave_requests.sql
+    ├── V1.6__create_pay_periods_and_payroll_runs.sql
+    └── V1.7__create_review_cycles_and_individual_reviews.sql
+```
+
+> **To regenerate:** delete `forward_results/` and re-run Batch 1 + Batch 2. The pipeline resumes from any interruption automatically.
+
 ---
 
 ## 🏗️ Architecture
@@ -247,10 +295,18 @@ automated-reverse-engineering-pipeline/
 │   ├── run_forward.py                  ← Batch 1: stack selection → sprint planning
 │   ├── run_forward_batch2.py           ← Batch 2: per-sprint dev loop
 │   └── pipeline_forward/
-│       ├── backend_dev_runner.py
-│       ├── frontend_dev_runner.py
-│       ├── test_writer_runner.py
-│       ├── test_executor_runner.py     ← Real subprocess build + test (no LLM)
+│       ├── fwd_base.py                 ← Shared helpers: call_claude, write_file_bundle
+│       ├── stack_selection_runner.py   ← Proposes 2-3 stacks, interactive menu
+│       ├── stack_mapping_runner.py     ← Writes conventions contract
+│       ├── sprint_planner_runner.py    ← Breaks work into ordered sprints
+│       ├── elaboration_runner.py       ← Expands each sprint into tasks
+│       ├── scaffold_runner.py          ← Creates project structure + config files
+│       ├── backend_dev_runner.py       ← Domain entities, business rules, API endpoints
+│       ├── security_review_runner.py   ← Per-sprint security review
+│       ├── frontend_dev_runner.py      ← React screens wired to backend API
+│       ├── test_writer_runner.py       ← Writes unit + integration tests
+│       ├── test_executor_runner.py     ← Real subprocess build + test (no LLM) + fix-loop
+│       ├── data_migration_runner.py    ← Flyway SQL migration scripts
 │       └── review_runner.py            ← 3 independent reviewers, reconciled
 │
 └── source/                             ← Sample codebases included for testing
@@ -299,11 +355,15 @@ python run.py --source <source> --output ./results --skip-layer1
 ```bash
 cd forward-engineering-only
 
-# Batch 1: stack selection → scaffold → sprint planning (auto-chains into Batch 2)
+# Batch 1: stack selection → scaffold → sprint planning
 python run_forward.py --input ../results --output ./forward_results
 
-# Batch 2: per-sprint development loop (if running separately)
+# Batch 2: per-sprint development loop (6 sprints, ~6-10 hours)
 python run_forward_batch2.py --input ../results --output ./forward_results
+
+# Skip the interactive menu by specifying the stack upfront
+python run_forward.py --input ../results --output ./forward_results \
+  --target-stack "Backend: Java 17, Spring Boot 3.x | Frontend: React (TypeScript) | Database: PostgreSQL"
 ```
 
 ### Environment Variables
@@ -315,13 +375,36 @@ export PIPELINE_CLAUDE_MODEL="claude-opus-4-8"
 # Skip Testcontainers integration tests (default: skip)
 export PIPELINE_SKIP_INTEGRATION_TESTS=1   # skip (default — no Docker needed)
 export PIPELINE_SKIP_INTEGRATION_TESTS=0   # run full integration suite (needs Docker)
+
+# Portable JDK/Maven (no admin rights required — point to extracted zip locations)
+export JAVA_HOME="C:\tools\jdk21\jdk-21.0.11+10"
+export MAVEN_HOME="C:\tools\apache-maven-3.9.6"
+```
+
+### No Admin Rights Required
+
+The pipeline fully supports locked-down / no-admin environments. Java and Maven do **not** need to be installed via an installer — the test executor automatically falls back to portable zip extractions:
+
+```bash
+# Download Temurin JDK 21 portable zip (no installer) from adoptium.net
+# Extract to C:\tools\jdk21\
+
+# Download Apache Maven 3.9.6 zip from archive.apache.org/dist/maven/maven-3/3.9.6/
+# Extract to C:\tools\apache-maven-3.9.6\
+
+# Set env vars and run — no admin prompt, no PATH changes needed
+set JAVA_HOME=C:\tools\jdk21\jdk-21.0.11+10
+set MAVEN_HOME=C:\tools\apache-maven-3.9.6
+python run_forward_batch2.py --input ../results --output ./forward_results
 ```
 
 ---
 
 ## 📊 Example Output
 
-This repo includes a **complete example run** against the Oracle Forms + PL/SQL legacy HRMS (`source/ts-plsql-oracle-forms-hrms`), with all 25 output documents, the Enterprise Knowledge Graph, and the generated Java + React application in `forward-engineering-only/forward_results/`.
+This repo includes a **complete example run** against the Oracle Forms + PL/SQL legacy HRMS (`source/ts-plsql-oracle-forms-hrms`), with all 25 output documents and the Enterprise Knowledge Graph in `results/`.
+
+To regenerate the forward engineering output (Java + React application), run Batch 1 + Batch 2 — the pipeline is fully resumable and idempotent.
 
 ### Enterprise Knowledge Graph (excerpt)
 
@@ -346,16 +429,18 @@ This repo includes a **complete example run** against the Oracle Forms + PL/SQL 
 }
 ```
 
-### Forward-Engineered Application
+### Forward-Engineered Application (6 Sprints)
 
-The pipeline generated a working **Java 21 + Spring Boot 3 + React 18 + TypeScript** HRMS from the legacy Oracle PL/SQL source, including:
+The pipeline generates a working **Java 17 + Spring Boot 3 + React 18 + TypeScript + PostgreSQL** HRMS from the legacy Oracle PL/SQL source:
 
-- **Security context** — JWT with refresh tokens, AES-256 SSN encryption, role-based access control
-- **Employee management** — full lifecycle (hire, transfer, promote, terminate, rehire)
-- **Leave management** — submission, manager approval/rejection, balance tracking
-- **Payroll context** — pay periods, payroll runs, status tracking
-- **Performance reviews** — review cycles, individual assessments
-- **Audit logging** — tamper-evident, fail-closed, cross-cutting
+| Sprint | What was built |
+|--------|---------------|
+| **1 — Security/Identity** | JWT auth, refresh tokens, AES-256 SSN encryption, role-based access |
+| **2 — Employee Management** | Full lifecycle: hire, transfer, promote, terminate, rehire |
+| **3 — Leave Management** | Submission, manager approval/rejection, balance tracking |
+| **4 — Payroll** | Pay periods, payroll runs, status tracking |
+| **5 — Performance Reviews** | Review cycles, individual assessments, scoring |
+| **6 — Audit Logging** | Tamper-evident, fail-closed, cross-cutting across all modules |
 
 ---
 
@@ -372,6 +457,9 @@ Every extracted method is checked against business keywords (`validate`, `calcul
 
 ### Fail-Forward Fix Loop
 The forward engineering phase never blocks on a failing sprint. The fix-loop feeds test failures back to developer agents, retries up to `--max-retries` times, logs root causes to `LEARNINGS.json` so later sprints benefit, and marks irrecoverable sprints as `FAILED_BLOCKED` while continuing with independent ones.
+
+### Sprint-Level Checkpointing
+Every sprint writes its generated files, manifests, and ledger status to disk atomically. A crash, power cut, or rate-limit pause loses at most one in-progress agent call — re-running the same command resumes from the exact sprint step that was interrupted.
 
 ---
 
