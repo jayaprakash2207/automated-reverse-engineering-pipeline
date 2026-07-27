@@ -1,0 +1,6 @@
+-- Baseline Flyway migration for the scaffold.
+-- No schema objects are created yet: per the Stack Mapping Contract (row 9, section 2.6),
+-- domain tables are added only as their BR-* module requirements are confirmed.
+-- All future schema changes must land as new versioned files in this directory
+-- (V{major}.{minor}__{snake_case_description}.sql) -- no manual DDL against shared databases,
+-- and no database triggers of any kind.

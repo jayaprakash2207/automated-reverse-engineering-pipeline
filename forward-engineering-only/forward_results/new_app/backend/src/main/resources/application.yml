@@ -1,0 +1,54 @@
+spring:
+  application:
+    name: app
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/appdb}
+    username: ${DB_USERNAME:appuser}
+    # No default value on purpose: a literal password default here would be the
+    # same hard-coded-secret-in-source-control defect as the legacy PKG-SECURITY
+    # AES key (Stack Mapping Contract row 6 / non-negotiable #2). Must be
+    # injected via the DB_PASSWORD environment variable in every environment.
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  security:
+    jwt:
+      # No default value on purpose: JwtTokenService fails fast at startup if this
+      # is blank. Must be injected via the JWT_SECRET environment variable, never
+      # committed to this file (Stack Mapping Contract row 6 / non-negotiable #2).
+      secret: ${JWT_SECRET:}
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D
+  hire-date-policy:
+    # BR-hire-date-drift (DISC-001) is unresolved: one source states a 90-day
+    # threshold, another 180. This value is the single place that decision lands
+    # once the business owner reconciles it — HireDatePolicy never hard-codes
+    # either number. 90 is used as a placeholder default only, matching the more
+    # conservative of the two disputed values; override via
+    # HIRE_DATE_THRESHOLD_DAYS pending sign-off.
+    threshold-days: ${HIRE_DATE_THRESHOLD_DAYS:90}
+
+Everything else in this sprint's file set is unwritten source (`[File does not exist yet]`), which is an environment delivery gap per the known-issues log, not something a security pass can act on — flagging rather than inventing replacement backend code to avoid conflicting with the Backend agent's actual (undelivered) implementation.
