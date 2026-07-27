@@ -309,6 +309,11 @@ automated-reverse-engineering-pipeline/
 │       ├── data_migration_runner.py    ← Flyway SQL migration scripts
 │       └── review_runner.py            ← 3 independent reviewers, reconciled
 │
+├── .claude/
+│   └── settings.local.json             ← Pre-approved Claude Code permissions (portable JDK/Maven, C:\ access)
+│
+├── PIPELINE_STATE.md                   ← Team & agent handoff doc — current status, run commands, fixes
+│
 └── source/                             ← Sample codebases included for testing
     ├── eShopOnWeb/                     ← Microsoft .NET e-commerce sample
     └── ts-plsql-oracle-forms-hrms/     ← Oracle Forms + PL/SQL legacy HRMS
@@ -460,6 +465,40 @@ The forward engineering phase never blocks on a failing sprint. The fix-loop fee
 
 ### Sprint-Level Checkpointing
 Every sprint writes its generated files, manifests, and ledger status to disk atomically. A crash, power cut, or rate-limit pause loses at most one in-progress agent call — re-running the same command resumes from the exact sprint step that was interrupted.
+
+---
+
+## 🤝 Team Handoff & Resuming Work
+
+### For team members picking up this project
+
+Read **[PIPELINE_STATE.md](PIPELINE_STATE.md)** first — it contains:
+- Exact current status of every phase and sprint
+- Run commands to continue from where work left off
+- All critical bugs already fixed (don't re-investigate them)
+- Portable JDK/Maven setup for no-admin machines
+- Key file locations, prompt architecture, and cost estimates
+
+### For AI agents continuing sprint work
+
+1. Read `PIPELINE_STATE.md` for full context
+2. Check `forward-engineering-only/forward_results/sprint_ledger.json` for sprint status
+3. Reset any `FAILED_BLOCKED` sprint to `PENDING` and re-run Batch 2
+4. `.claude/settings.local.json` pre-approves all permissions needed for portable tool setup
+
+### Cloning and continuing on a new machine
+
+```bash
+git clone https://github.com/jayaprakash2207/automated-reverse-engineering-pipeline.git
+cd automated-reverse-engineering-pipeline
+pip install -r requirements.txt
+npm install -g @anthropic-ai/claude-code && claude login
+
+# Reverse engineering already done — results/ is in the repo
+# Run forward engineering (picks up from where it left off):
+cd forward-engineering-only
+python run_forward.py --input ../results --output ./forward_results
+```
 
 ---
 
