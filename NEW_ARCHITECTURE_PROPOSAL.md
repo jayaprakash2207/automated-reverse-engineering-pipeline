@@ -1,22 +1,23 @@
 # New Architecture Proposal — Token Reduction for Reverse Engineering Pipeline
 
-> **Status:** Proposal v3 — Combined approach (2026-07-28)
+> **Status:** Proposal v4 — Combined approach, honest claims, open bugs documented (2026-07-28)
 > **Author:** Jayaprakash
-> **Reviewer:** Team peer review — bugs found and incorporated in v2
-> **v3 change:** Combined symbol-level retrieval + package context summary — best of both approaches
+> **Reviewer:** Team peer review — v2 bugs incorporated, v3 bugs caught, v4 fixes claims
+> **v4 change:** Removes 3 false claims in v3; documents all 7 open code bugs; restores baseline requirement
 > **Applies to:** Reverse Engineering phase only (Steps 1–13)
 > **Forward Engineering:** No changes — already fully automated and working
 
 ---
 
-## TL;DR — Final Recommendation (v3)
+## TL;DR — Final Recommendation (v4)
 
 **Combine symbol-level retrieval WITH a package context summary in every Turn 2 prompt.**
 
 - Symbols give precision and 65–70% token saving
 - Package summary preserves cross-procedure pattern visibility (the one risk v2 introduced)
-- No accuracy regression vs current
-- No baseline measurement needed before implementing
+- No accuracy regression vs current — **but baseline must be measured to confirm this**
+
+**Current status:** The code sections in this proposal (4.1–4.3, 4.5) describe the correct design. The implementation is **not yet complete** — all 7 code bugs listed in Section 12 are still open. The parser currently finds 0 of 6 procedures in the sample file. Do not treat this as "ready to run" until Section 12 bugs are resolved.
 
 ---
 
@@ -26,7 +27,8 @@
 |---|---|---|
 | v1 | Whole files sent (current) | 80% of tokens irrelevant, expensive |
 | v2 | Symbols only | Cheaper but cross-procedure patterns hidden |
-| **v3 (final)** | **Symbols + package context summary** | **Best of both — cheap AND accurate** |
+| v3 | Symbols + package context summary | Good idea, but 7 v2 bugs unfixed + 2 new false claims |
+| **v4 (this)** | **Same as v3, honest claims** | **7 open bugs documented; package summary scope corrected; baseline required** |
 
 ---
 
@@ -47,11 +49,11 @@ Turn 2 — Agent receives THREE things:
          ┌─────────────────────────────────────────┐
          │ 1. PACKAGE CONTEXT SUMMARIES            │
          │    One paragraph per relevant package   │
-         │    Lists all procedure names            │
-         │    States shared patterns across procs  │
-         │    States shared tables                 │
+         │    Lists all procedure names (cap 20)   │
+         │    Lists shared tables                  │
+         │    Lists common call targets            │
          │    Generated from SYMBOL_INDEX — no AI  │
-         │    ~200 tokens per package              │
+         │    ~150–200 tokens, capped              │
          ├─────────────────────────────────────────┤
          │ 2. REQUESTED SYMBOL BODIES              │
          │    Exact procedure/trigger/table bodies │
@@ -75,12 +77,23 @@ Total procedures: 15
   log_history, hire_employee, terminate_employee, transfer_employee,
   promote_employee, get_employee, search_employees, update_salary,
   get_reporting_chain, bulk_import, rehire_employee
-Shared pattern: all write procedures check EMPLOYMENT_STATUS before DML
+  [+0 more]
 Shared tables: EMPLOYEES, EMPLOYEE_HISTORY, DEPARTMENTS
 Common calls: validate_dept(), validate_manager(), log_history()
 ```
 
-This is ~150–200 tokens. It gives the agent cross-procedure pattern visibility without sending 400 lines of raw code.
+**What the summary CAN build from the index (no AI):**
+- Total procedure count ✅
+- All procedure names (capped at 20, then "+N more") ✅
+- Shared tables (from `columns` field in index) ✅
+- Common calls (from `calls` graph edges) ✅
+
+**What the summary CANNOT build from the index:**
+- "Shared pattern: all write procedures check EMPLOYMENT_STATUS before DML" ❌
+
+That line was in v3. It is wrong — that pattern lives inside procedure bodies, not in the index. The index only stores names, line numbers, and call links. Detecting body patterns requires either an LLM pass (extra cost) or a body-pattern miner (not in the 4–6 day estimate). The line has been removed.
+
+The summary gives the agent context about what a package contains and how procedures connect — not what their internal logic does. That is still valuable and still cheap (~150–200 tokens per package, growing with procedure count — cap at 20 names to keep it bounded).
 
 ---
 
@@ -452,13 +465,15 @@ v3 costs slightly more than v2 (package summaries add ~200 tokens per package) b
 
 The ~85–90% figure has no measured baseline behind it. It was estimated from code coverage, not from comparing pipeline output against ground truth.
 
-**v2 risk — now resolved in v3:**
+**v2 risk — partially addressed in v4:**
 
 Some business rules only appear when you see a whole package at once. Example: every procedure in `PKG_PAYROLL` checks `v_status NOT IN ('TERMINATED', 'ON_LEAVE')` — this pattern is only visible when you see all procedures together. v2 (symbols only) would hide this.
 
-**v3 fix:** Package context summary explicitly captures shared patterns across all procedures in a package and includes them in every Turn 2 prompt. The summary is generated from `SYMBOL_INDEX.json` — no AI, no extra cost beyond ~200 tokens per package.
+**v4 partial fix:** Package context summary includes all procedure names, shared tables, and common call targets in every Turn 2 prompt. This preserves structural cross-procedure visibility.
 
-**Result:** Cross-procedure patterns preserved. Baseline measurement before implementing is no longer required — the summary covers the risk.
+**What the summary does NOT preserve:** Internal logic patterns inside procedure bodies (e.g. "all write procs check EMPLOYMENT_STATUS"). These require body-level analysis — either a separate AI pass or a pattern miner not yet built.
+
+**Baseline measurement is still required.** You cannot claim accuracy is preserved without measuring before-and-after on the same source. Implement XML minification first, then measure baseline, then implement the symbol index, then compare again.
 
 ---
 
@@ -529,24 +544,27 @@ results/                                ← existing outputs untouched
 | Start now or after forward engineering? | XML minification now. Rest after Batch 2 completes. |
 | Partial or full? | Partial — XML only first, measure, then decide. |
 | Fallback behaviour? | Send whole file AND log it. Silent fallback = false savings. |
-| Accuracy target? | Measure baseline first. Can't hold a number never measured. |
+| Accuracy target? | **Measure baseline first** — before touching symbol parsing. No number exists yet. |
 | Step 3 long-term? | Plan to replace with SYMBOL_INDEX on large repos. Not now. |
+| Can we skip baseline? | No. Summary preserves structural visibility only — logic patterns need a measured check. |
 
 ---
 
-## 10. Summary (v3 — final combined approach)
+## 10. Summary (v4 — combined approach, honest claims)
 
-| | Current (whole file) | v2 symbols-only | **v3 combined (recommended)** |
+| | Current (whole file) | v2 symbols-only | **v4 combined (recommended)** |
 |---|---|---|---|
 | What Turn 2 receives | Whole files | Symbol bodies + deps | Package summaries + symbol bodies + deps |
 | Tokens per agent call | ~18,000 | ~3,500 | **~5,000–6,000** |
-| Cross-procedure patterns | ✅ Visible | ❌ Risk | **✅ Preserved via summary** |
-| Accuracy | ~85–90% | Unknown risk | **~85–90% preserved** |
+| Structural cross-procedure visibility | ✅ Visible | ❌ Hidden | **✅ Preserved via summary** |
+| Logic pattern visibility (body-level) | ✅ Visible | ❌ Hidden | **⚠ Not preserved — baseline required** |
+| Accuracy | ~85–90% (unmeasured) | Unknown risk | **Measure before and after to confirm** |
 | Reverse eng cost (small repo) | ~$7–11 | ~$3–6 | **~$4–7** |
 | Reverse eng cost (large repo) | ~$60–90 | ~$10–20 | **~$12–22** |
-| Baseline measurement needed? | — | Yes | **No — summary covers the risk** |
+| Baseline measurement needed? | — | Yes | **Yes — summary does not replace it** |
+| Code bugs blocking implementation | — | 7 open | **7 open (Section 12)** |
 | New dependencies | — | None | **None (stdlib only)** |
-| Implementation effort | — | — | **4–6 days** |
+| Implementation effort | — | — | **4–6 days (after bugs fixed)** |
 | Forward engineering affected | — | Not at all | **Not at all** |
 
 ---
@@ -565,15 +583,42 @@ results/                                ← existing outputs untouched
 | 18–26 hours effort | 4–6 days realistic. |
 | "85–90% same" | No baseline measured. Cross-procedure risk not listed. |
 
-### v2 → v3 (combined approach)
+### v2 → v3 (combined approach — but 3 new bugs introduced)
 
-| v2 limitation | v3 solution |
+| v2 limitation | v3 claimed solution | v3 problem |
+|---|---|---|
+| Cross-procedure patterns hidden | Package context summary added | ✅ Good idea |
+| Baseline measurement required | "Summary covers the risk — no baseline needed" | ❌ False — summary can't detect logic patterns |
+| Token math ~200 tokens/package | "~200 tokens per package" | ❌ Grows unbounded with large packages |
+| v2 bugs 1–7 open | Code sections copied unchanged from v2 | ❌ All 7 bugs still open in v3 |
+
+### v3 → v4 (honest claims, open bugs documented)
+
+| v3 false claim | v4 correction |
 |---|---|
-| Symbols only — cross-procedure patterns hidden | Add package context summary to every Turn 2 prompt |
-| "Measure baseline before implementing" required | Summary covers the risk — safe to implement without baseline |
-| ~80% token saving but accuracy risk | ~65–70% saving with accuracy preserved |
-| v2 recommended as cheaper option | v3 recommended as the correct option |
+| "Shared pattern: all write procs check X" in summary | Removed — index holds names/links only, not body logic |
+| "Baseline measurement no longer required" (Section 6, 10) | Restored — baseline required, summary does not replace it |
+| "~200 tokens per package" fixed | Capped at 20 names + "+N more" to keep it bounded |
+| 7 code bugs described as fixed | All 7 explicitly listed as open in Section 12 |
 
 ---
 
-*Proposal v1: 2026-07-28 | v2: peer review fixes same day | v3: combined approach same day | Pipeline version: v2*
+## 12. Open Code Bugs — Not Yet Fixed
+
+**The parser currently finds 0 of 6 procedures in the sample file.** None of the code sections below Section 4 are working implementations — they are correct designs. The bugs below must be fixed before any token savings are real.
+
+| # | Bug | Location | Status |
+|---|---|---|---|
+| 1 | Parser: `in_proc=True` latches forever in package spec — every real body is skipped. Finds 0/6 procedures in sample. | `symbol_index_builder.py` | **Open — blocks everything** |
+| 2 | Crash: `fallback_count / len(requested_symbols)` → divide by zero when list is empty | `symbol_index_builder.py` | Open |
+| 3 | XML: drops comments, drops XML declaration, mangles namespaces to `ns0:`, breaks CDATA, no try/except on parse | `xml_minifier.py` | Written but untested |
+| 4 | Overload keys `#2` are position-based — reorder the file and graph silently points at the wrong procedure | `symbol_index_builder.py` | Open |
+| 5 | Spec vs body: Section 4.3 says use `.spec` suffix but Section 4.2 code has no way to detect which section it's in | `symbol_index_builder.py` | Contradiction |
+| 6 | Step 3 claim: Sections 4.6 and 5 say index replaces Step 3 / "$0 cost" — index holds no business rules | Proposal text | Overclaim |
+| 7 | File extensions: `.pkb/.pks/.frmxml/.pllxml/.mmxml` were dropped by Step 2 — PL/SQL bodies never reach Claude | `scan_runner.py` | **Fixed by teammate** ✅ |
+
+**Recommended fix order:** Bug #1 first (parser), then #2 (crash), then test #3 (minifier), then #4/#5 (key stability).
+
+---
+
+*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: honest claims, all bugs documented | Pipeline version: v2*
