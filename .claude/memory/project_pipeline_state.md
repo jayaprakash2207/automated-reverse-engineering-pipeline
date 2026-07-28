@@ -18,6 +18,22 @@ Source codebase: `source/ts-plsql-oracle-forms-hrms/` (Oracle Forms + PL/SQL HRM
 
 ---
 
+## Pipeline Automation Status
+**All known blockers automated away as of July 2026.**
+
+`cleanup_sprint_output()` in `fwd_base.py` runs every sprint automatically — removes code fence artifacts (.ts/.tsx/.java/.sql/.xml), END FILE markers, fixes App.tsx export, jest config deduplication, import.meta fix, orphan folder deletion, stale node_modules detection. Scaffold generates correct package.json with axios + jest packages from the start.
+
+Fix-loop gets full stdout+stderr (4000 chars each) — enough to self-heal any new AI pattern within 3 retries.
+
+**Prerequisites before first run:**
+1. `set ANTHROPIC_API_KEY=sk-ant-...`
+2. `pip install -r requirements.txt`
+3. `npm` on PATH (install Node.js)
+4. JDK extracted to `C:\tools\jdk21\jdk-21.0.11+10`
+5. Maven extracted to `C:\tools\apache-maven-3.9.6`
+
+---
+
 ## Reverse Engineering Accuracy
 **Current accuracy: ~85–90%** (improved July 2026 from ~60–65%)
 

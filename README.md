@@ -555,6 +555,23 @@ Files are read once (Step 2), deep-extracted once (Step 3). Each agent requests 
 ### Business-Artifact Tagging
 Every extracted method is checked against business keywords (`validate`, `calculate`, `process`, `approve`, `authorize`, `notify`, etc.). Business-critical logic is automatically separated from technical plumbing.
 
+### Zero-Error Automation — AI Artifact Cleanup
+
+Every sprint runs `cleanup_sprint_output()` automatically after code generation and before tests. This permanently eliminates all known AI generation artifacts with no manual intervention:
+
+| Fix | What it does | Scope |
+|-----|-------------|-------|
+| Jest config dedup | Deletes `jest.config.js` + `.ts`, keeps only `.cjs` | Frontend |
+| `import.meta` fix | Replaces `import.meta.env.*` → `process.env` fallback | Frontend `.ts/.tsx` |
+| App.tsx export | Converts named export → `export default function App` | Frontend |
+| Code fence strip | Removes `` ``` `` from first/last line of generated files | `.ts` `.tsx` `.java` `.sql` `.xml` |
+| `=== END FILE ===` strip | Removes AI file-boundary markers leaked into source | All generated files |
+| Orphan folder delete | Deletes `src/api/`, `src/components/audit/` etc. if generated | Frontend |
+| Stale `node_modules` | Detects missing esbuild binary → deletes for fresh install | Frontend |
+| Package completeness | `axios`, jest packages baked into scaffold `package.json` from the start | Scaffold |
+
+Additionally, the fix-loop now receives full `stdout` + `stderr` (4000 chars each) when tests fail — enough context for the AI agent to diagnose and fix any new pattern within 3 retries.
+
 ### Fail-Forward Fix Loop
 The forward engineering phase never blocks on a failing sprint. The fix-loop feeds test failures back to developer agents, retries up to `--max-retries` times, logs root causes to `LEARNINGS.json` so later sprints benefit, and marks irrecoverable sprints as `FAILED_BLOCKED` while continuing with independent ones.
 

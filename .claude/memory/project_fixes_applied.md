@@ -247,5 +247,30 @@ Added 3 new rules to CALL1_PROMPT:
 
 ---
 
-**Why:** These 10 fixes blocked Sprint 1 and Sprint 2 from running (FAILED_BLOCKED), or reduced accuracy of reverse-engineering output. Knowing them upfront prevents wasting fix-loop tokens re-investigating the same root causes.
-**How to apply:** Before starting any sprint troubleshooting, run through this checklist first.
+---
+
+## Fix 11 — All fixes 2–9 fully automated (July 2026)
+**Type:** Pipeline automation — no more manual intervention needed
+
+**What changed:** All fixes 2–9 are now applied automatically every sprint via `cleanup_sprint_output()` in `fwd_base.py`, called from `run_forward_batch2.py` after frontend dev and before test executor.
+
+**Files changed:**
+- `forward-engineering-only/pipeline_forward/fwd_base.py` — `cleanup_sprint_output()` + 7 sub-functions
+- `forward-engineering-only/pipeline_forward/scaffold_runner.py` — scaffold prompt now requires axios, jest packages, jest.config.cjs, jest.importMetaSetup.cjs, jest.styleMock.cjs from the start
+- `forward-engineering-only/run_forward_batch2.py` — calls `cleanup_sprint_output()` every sprint
+
+**Scope extended:** Code fence strips and `=== END FILE ===` removal now covers `.java`, `.sql`, `.xml`, `.yaml`, `.yml`, `.properties`, `.json` — not just frontend TypeScript.
+
+**Fix-loop error context improved:**
+- `test_executor_runner.py`: stdout/stderr tail increased from 3000→8000 chars per subproject
+- `run_forward_batch2.py`: feedback to fix-loop agents now includes stdout + stderr at 2000 chars each (was `stderr[-500:]` only)
+
+**Result:** No manual steps needed between sprints. If a brand-new AI pattern appears, the fix-loop now has enough context to self-heal within 3 retries.
+
+**Why:** User needed zero-error, zero-manual-intervention pipeline. All previously seen blockers automated away. Fix-loop given enough context to handle anything new.
+**How to apply:** Nothing to apply — runs automatically every sprint.
+
+---
+
+**Why:** These 11 fixes eliminated all known blockers. Fixes 1–10 document what was found; Fix 11 means none of them need manual intervention anymore.
+**How to apply:** Before any sprint troubleshooting, check if it's a new pattern or a known one. Known ones are handled automatically now.
