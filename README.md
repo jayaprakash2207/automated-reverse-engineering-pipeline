@@ -552,6 +552,18 @@ Every node in the Enterprise Knowledge Graph **must cite source file + line numb
 ### Token Efficiency
 Files are read once (Step 2), deep-extracted once (Step 3). Each agent requests only the sections it needs via the two-turn pattern. A typical 300-file codebase uses ~40% fewer tokens than naive whole-repo prompting.
 
+### Planned: Next-Generation Token Reduction (~65–80% further saving)
+
+A new architecture proposal is in progress — see **[NEW_ARCHITECTURE_PROPOSAL.md](NEW_ARCHITECTURE_PROPOSAL.md)** for full details.
+
+| Technique | Token saving | Risk | Status |
+|---|---|---|---|
+| XML Minification | 20–60% on `.frmxml`/`.pllxml` | Zero | Ready to implement |
+| Symbol Index Builder | 50–80% on agent Turn 2 calls | Low | Designed |
+| Dependency Graph | Auto-expands exact call deps | Low | Designed |
+
+**Recommendation:** XML minification first (2–3 hours, zero risk). Symbol Index + Dependency Graph after forward engineering completes a full run.
+
 ### Business-Artifact Tagging
 Every extracted method is checked against business keywords (`validate`, `calculate`, `process`, `approve`, `authorize`, `notify`, etc.). Business-critical logic is automatically separated from technical plumbing.
 
