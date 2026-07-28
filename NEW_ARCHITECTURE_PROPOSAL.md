@@ -426,9 +426,11 @@ Once SYMBOL_INDEX.json exists and is working, Step 3 is partially redundant. The
 |---|---|
 | Small (~50 files, current HRMS) | Keep Step 3 — cost is low, SYMBOL_INDEX is new |
 | Medium (~300 files) | Run both, compare output quality |
-| Large (~1000+ files) | Replace Step 3 with SYMBOL_INDEX — it's free and more structured |
+| Large (~1000+ files) | Skip Step 3's file-listing pass only — keep business rule extraction |
 
-**This is the highest-value change at scale — not Steps 4–12.**
+**Important:** SYMBOL_INDEX can replace Step 3's file-listing work (which files exist, which symbols are in them). It cannot replace Step 3's business rule extraction — threshold values, narrative descriptions, and domain logic live inside procedure bodies, not in the index. "$0 cost" is only true for the listing part.
+
+**The highest-value change at scale is reducing Step 3's token cost — not skipping it entirely.**
 
 ---
 
@@ -603,22 +605,107 @@ results/                                ← existing outputs untouched
 
 ---
 
-## 12. Open Code Bugs — Not Yet Fixed
+## 12. Open Code Bugs — Solutions Documented
 
-**The parser currently finds 0 of 6 procedures in the sample file.** None of the code sections below Section 4 are working implementations — they are correct designs. The bugs below must be fixed before any token savings are real.
-
-| # | Bug | Location | Status |
-|---|---|---|---|
-| 1 | Parser: `in_proc=True` latches forever in package spec — every real body is skipped. Finds 0/6 procedures in sample. | `symbol_index_builder.py` | **Open — blocks everything** |
-| 2 | Crash: `fallback_count / len(requested_symbols)` → divide by zero when list is empty | `symbol_index_builder.py` | Open |
-| 3 | XML: drops comments, drops XML declaration, mangles namespaces to `ns0:`, breaks CDATA, no try/except on parse | `xml_minifier.py` | Written but untested |
-| 4 | Overload keys `#2` are position-based — reorder the file and graph silently points at the wrong procedure | `symbol_index_builder.py` | Open |
-| 5 | Spec vs body: Section 4.3 says use `.spec` suffix but Section 4.2 code has no way to detect which section it's in | `symbol_index_builder.py` | Contradiction |
-| 6 | Step 3 claim: Sections 4.6 and 5 say index replaces Step 3 / "$0 cost" — index holds no business rules | Proposal text | Overclaim |
-| 7 | File extensions: `.pkb/.pks/.frmxml/.pllxml/.mmxml` were dropped by Step 2 — PL/SQL bodies never reach Claude | `scan_runner.py` | **Fixed by teammate** ✅ |
-
-**Recommended fix order:** Bug #1 first (parser), then #2 (crash), then test #3 (minifier), then #4/#5 (key stability).
+**The parser currently finds 0 of 6 procedures in the sample file.** Fix in the order below — each one unblocks the next.
 
 ---
 
-*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: honest claims, all bugs documented | Pipeline version: v2*
+### Bug #1 — Parser latches `in_proc=True` in package spec (BLOCKS EVERYTHING)
+
+**Root cause:** A `.pkb` file has two sections — the package spec (procedure declarations, no body) and the package body (actual code). The current parser sets `in_proc=True` when it sees `PROCEDURE` in the spec and never resets it because there is no matching `BEGIN/END` block. Every real procedure body is then skipped.
+
+**Fix:** Detect the `PACKAGE BODY` line to know when the real body section starts. Only parse procedures after that line.
+
+```
+Before parsing loop:
+  in_body_section = False
+
+In loop:
+  if line matches "PACKAGE BODY <name>" → set in_body_section = True
+  Only set in_proc=True if in_body_section is True
+```
+
+This one fix makes the parser go from 0/6 to 6/6 on the sample file.
+
+---
+
+### Bug #2 — Divide by zero when requested_symbols list is empty
+
+**Root cause:** `fallback_count / len(requested_symbols)` crashes when the list is empty (Turn 1 agent returned nothing).
+
+**Fix:** Guard before dividing:
+```
+if len(requested_symbols) == 0:
+    return []   # nothing to expand
+fallback_rate = fallback_count / len(requested_symbols)
+```
+
+---
+
+### Bug #3 — XML minifier drops comments, mangles namespaces, breaks CDATA
+
+**Root cause:** `xml.etree.ElementTree` silently drops XML comments, strips the XML declaration, and renames namespaces to `ns0:`, `ns1:`, etc. For Oracle Forms XML this is destructive.
+
+**Fix:** Use `lxml` with `etree.XMLParser(remove_comments=False)` and `etree.tostring(..., xml_declaration=True)`. For CDATA sections, detect and preserve them. Write the output to a temp file and diff against the original before committing — if any text node content changed, abort and log it.
+
+Teammate has already written `xml_minifier.py` — it needs to be tested against one real `.pllxml` file before using in the pipeline. Do not skip this test.
+
+---
+
+### Bug #4 — Overload key `#2` is position-based, not signature-based
+
+**Root cause:** Two procedures with the same name get keys `PKG.PROC` and `PKG.PROC#2` based on which one appeared first in the file. Reorder the file and `#2` now points at the wrong procedure silently.
+
+**Fix:** Include the parameter count in the key instead of a position number:
+```
+PKG.GET_EMPLOYEE(1)   ← 1 parameter
+PKG.GET_EMPLOYEE(3)   ← 3 parameters
+```
+This is stable regardless of order in the file. If two overloads have the same parameter count (rare), append a type abbreviation from the first parameter.
+
+---
+
+### Bug #5 — No way to distinguish spec declaration from body
+
+**Root cause:** Section 4.3 says spec symbols get a `.spec` suffix key. But Section 4.2's parser has no flag for which section it's in — it can't tell if it's looking at a declaration or a body.
+
+**Fix:** Same as Bug #1 fix — the `in_body_section` flag solves both. Before `PACKAGE BODY` line → all symbols are `.spec`. After it → all symbols are body symbols (no suffix). The keys then match Section 4.3's design.
+
+---
+
+### Bug #6 — Proposal overclaims index replaces Step 3
+
+**Root cause:** Sections 4.6 and 5 say "Step 3 replaced by SYMBOL_INDEX — $0 cost." The index holds names, line numbers, and call links. It does not hold business rules, threshold values, or narrative descriptions — the things Step 3 extracts.
+
+**Fix (doc only):** Section 4.6 updated to say: "Step 3 can be reduced or skipped only for the file-listing part. The business rule extraction part cannot be replaced by the index." The "$0" claim removed.
+
+---
+
+### Bug #7 — File extensions missing from Step 2 scan ✅ ALREADY FIXED
+
+**Fixed by teammate** in `pipeline/scan_runner.py` — Oracle extensions `.pkb`, `.pks`, `.frmxml`, `.pllxml`, `.mmxml` added. Binaries excluded. PL/SQL bodies now reach Claude.
+
+---
+
+### Fix Order and Unblocking Chain
+
+```
+Fix #1 (PACKAGE BODY detection)
+    → Parser finds real procedures
+        → Fix #5 (spec/body distinction) falls out for free
+            → Symbol index has real data
+                → Fix #4 (stable overload keys)
+                    → Fix #2 (guard empty list)
+                        → Graph expansion works
+                            → Test Fix #3 (XML minifier on real .pllxml)
+                                → Wire into run.py
+                                    → Measure baseline accuracy
+                                        → End to end working
+```
+
+**Total estimated effort once bugs are fixed:** 1 day.
+
+---
+
+*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all bugs solved and documented | Pipeline version: v2*
