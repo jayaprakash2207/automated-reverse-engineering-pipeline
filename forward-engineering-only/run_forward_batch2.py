@@ -150,8 +150,9 @@ def _run_one_sprint(sprint: dict, input_dir: str, output_dir: str,
         findings = list(review.get("consolidated_findings", []))
         if not test_result.get("passed"):
             findings.append(
-                f"[test-executor] Real test run failed (exit code {test_result.get('returncode')}): "
-                f"{test_result.get('stderr_tail', '')[-500:]}"
+                f"[test-executor] Real test run failed (exit code {test_result.get('returncode')}).\n"
+                f"STDOUT:\n{test_result.get('stdout_tail', '')[-2000:]}\n"
+                f"STDERR:\n{test_result.get('stderr_tail', '')[-2000:]}"
             )
         feedback = "\n".join(f"- {f}" for f in findings)
 

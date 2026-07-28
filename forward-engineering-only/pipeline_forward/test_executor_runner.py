@@ -172,7 +172,7 @@ def _run_subproject(name: str, project_dir: Path, timeout: int) -> dict:
     print(f"  [{name}] Real result: {'PASS' if passed else 'FAIL'} (exit code {proc.returncode})")
     return {
         "name": name, "status": "done", "passed": passed, "returncode": proc.returncode,
-        "stdout_tail": stdout[-3000:], "stderr_tail": stderr[-3000:],
+        "stdout_tail": stdout[-8000:], "stderr_tail": stderr[-8000:],
         "log": "\n".join(log_lines),
     }
 
@@ -213,8 +213,8 @@ def run(sprint: dict, output_dir: str, timeout: int = 900) -> dict:
         return {"status": "failed", "reason": "subproject_failed", "message": msg}
 
     all_passed = all(r.get("passed") for r in results)
-    stdout_tail = "\n".join(f"[{r['name']}] {r.get('stdout_tail', '')[-1000:]}" for r in results)
-    stderr_tail = "\n".join(f"[{r['name']}] {r.get('stderr_tail', '')[-1000:]}" for r in results)
+    stdout_tail = "\n".join(f"[{r['name']}] {r.get('stdout_tail', '')[-4000:]}" for r in results)
+    stderr_tail = "\n".join(f"[{r['name']}] {r.get('stderr_tail', '')[-4000:]}" for r in results)
     print(f"  Overall: {'PASS' if all_passed else 'FAIL'} across {len(results)} sub-project(s)")
     return {
         "status": "done", "passed": all_passed,

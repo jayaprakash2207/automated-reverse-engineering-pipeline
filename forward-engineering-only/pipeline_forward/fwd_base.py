@@ -279,19 +279,24 @@ def cleanup_sprint_output(new_app_dir: str) -> None:
     """
     Run after frontend_dev_runner completes, before test_executor_runner.
     Silently removes all known AI generation artifacts so tests run clean.
+    Covers both frontend (TypeScript) and backend (Java/SQL) generated files.
     """
-    frontend = Path(new_app_dir) / "frontend"
-    if not frontend.exists():
-        return
+    new_app = Path(new_app_dir)
+    frontend = new_app / "frontend"
 
-    _fix_jest_config_duplicates(frontend)
-    _fix_import_meta(frontend)
-    _fix_app_tsx_export(frontend)
-    _strip_code_fence_artifacts(frontend)
-    _strip_end_file_markers(frontend)
-    _delete_orphan_audit_folders(frontend)
-    _fix_stale_node_modules(frontend)
-    print("  [Cleanup] Done — AI generation artifacts removed.")
+    # Frontend-specific fixes
+    if frontend.exists():
+        _fix_jest_config_duplicates(frontend)
+        _fix_import_meta(frontend)
+        _fix_app_tsx_export(frontend)
+        _delete_orphan_audit_folders(frontend)
+        _fix_stale_node_modules(frontend)
+
+    # Whole new_app fixes — cover Java, SQL, XML, TS, TSX
+    _strip_code_fence_artifacts(new_app)
+    _strip_end_file_markers(new_app)
+
+    print("  [Cleanup] Done — AI generation artifacts removed (frontend + backend).")
 
 
 def _fix_jest_config_duplicates(frontend: Path) -> None:
@@ -369,12 +374,16 @@ def _fix_app_tsx_export(frontend: Path) -> None:
             print("  [Cleanup] Fixed App.tsx — changed to default export")
 
 
-def _strip_code_fence_artifacts(frontend: Path) -> None:
-    """Fix 5 — strip ``` code fence markers from first/last line of .ts/.tsx files."""
-    src = frontend / "src"
-    if not src.exists():
-        return
-    for p in list(src.rglob("*.ts")) + list(src.rglob("*.tsx")):
+def _strip_code_fence_artifacts(new_app: Path) -> None:
+    """Fix 5 — strip ``` code fence markers from first/last line of source files."""
+    globs = [
+        *new_app.rglob("*.ts"),
+        *new_app.rglob("*.tsx"),
+        *new_app.rglob("*.java"),
+        *new_app.rglob("*.sql"),
+        *new_app.rglob("*.xml"),
+    ]
+    for p in globs:
         try:
             lines = p.read_text(encoding="utf-8").splitlines(keepends=True)
             changed = False
@@ -391,13 +400,21 @@ def _strip_code_fence_artifacts(frontend: Path) -> None:
             pass
 
 
-def _strip_end_file_markers(frontend: Path) -> None:
-    """Fix 6 — remove '=== END FILE ===' artifact from generated files."""
-    src = frontend / "src"
-    if not src.exists():
-        return
+def _strip_end_file_markers(new_app: Path) -> None:
+    """Fix 6 — remove '=== END FILE ===' artifact from ALL generated files."""
     marker = "=== END FILE ==="
-    for p in list(src.rglob("*.ts")) + list(src.rglob("*.tsx")) + list(src.rglob("*.java")):
+    globs = [
+        *new_app.rglob("*.ts"),
+        *new_app.rglob("*.tsx"),
+        *new_app.rglob("*.java"),
+        *new_app.rglob("*.sql"),
+        *new_app.rglob("*.xml"),
+        *new_app.rglob("*.json"),
+        *new_app.rglob("*.yaml"),
+        *new_app.rglob("*.yml"),
+        *new_app.rglob("*.properties"),
+    ]
+    for p in globs:
         try:
             text = p.read_text(encoding="utf-8")
             if marker in text:
