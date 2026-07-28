@@ -1,9 +1,30 @@
 # New Architecture Proposal — Token Reduction for Reverse Engineering Pipeline
 
-> **Status:** Proposal — Not Yet Implemented
-> **Author:** Jayaprakash (session: 2026-07-28)
+> **Status:** Proposal v2 — Updated after peer review (2026-07-28)
+> **Author:** Jayaprakash
+> **Reviewer:** Team peer review — bugs found and incorporated below
 > **Applies to:** Reverse Engineering phase only (Steps 1–13)
 > **Forward Engineering:** No changes — already fully automated and working
+
+---
+
+## Peer Review Summary (Read This First)
+
+A teammate reviewed v1 of this proposal against the actual sample files and found **4 real bugs** and **2 scaling problems**. All are fixed in this v2. Their one-line summary:
+
+> *"Good idea, right direction — but the parser rules fail on our own sample files, and it saves money on the cheap step rather than the expensive one. Worth doing after we fix those. Start with the XML piece."*
+
+**Bugs found in v1:**
+1. PL/SQL end-of-procedure rule was wrong — `END name;` never appears in real files, they use plain `END;`
+2. `END IF;` / `END LOOP;` / `END CASE;` would silently cut procedures in half
+3. Symbol keys would collide — same trigger name on different form items, overloaded procedures
+4. XML minification said "zero risk" — false for `.pllxml` where stripping newlines from text nodes breaks PL/SQL comments
+
+**Scaling problems found in v1:**
+5. Savings were calculated on Step 3's small cost — but Step 3 grows with repo size and becomes the dominant cost on large apps. The proposal saved the wrong step.
+6. Symbol Map at scale (10,000-file app) becomes bigger than the whole-file approach it replaces — needs hierarchical grouping, not a flat list.
+
+All 6 are addressed below.
 
 ---
 
@@ -18,7 +39,7 @@ The current pipeline sends **whole files** to Claude in Turn 2. For a typical Or
 Claude reads ~1,350 lines (~18,000 tokens) per agent call but uses ~20% of it.
 The other 80% is wasted tokens = wasted money.
 
-**Goal:** Send only what Claude actually needs. Keep accuracy at ~85–90%.
+**Goal:** Send only what Claude actually needs. Keep accuracy at measured baseline.
 
 ---
 
@@ -29,14 +50,13 @@ SOURCE FILES (.sql, .pks, .pkb, .frmxml, .pllxml, .mmxml, .java, .py)
         │
         ▼
 Step 1  — Layer 1 extraction (regex/AST, no AI)
-        │  Extracts: class names, method signatures, table names, columns
         │  XML stored AS-IS (full whitespace, full indentation)
         ▼
 Step 2  — Scan Once (cache full file contents to disk)
         │
         ▼
 Step 3  — Scan Agent (Claude, 30-file chunks → DEEP_SCAN_OUTPUT.md)
-        │
+        │  ⚠ GROWS WITH REPO SIZE — dominant cost on large apps
         ▼
 Steps 4–12 — Analysis Agents (BA, DA, TA, AA)
         │
@@ -44,18 +64,10 @@ Steps 4–12 — Analysis Agents (BA, DA, TA, AA)
         │          Agent replies: ["PKG_EMPLOYEE.pkb", "HRMS_EMPLOYEE.frmxml"]
         │
         │  TURN 2: Agent receives WHOLE FILE CONTENTS
-        │          PKG_EMPLOYEE.pkb  = 400 lines (all 15 procedures)
-        │          HRMS_EMPLOYEE.frmxml = 600 lines (all triggers/blocks/items)
-        │          TOTAL per call: ~18,000 tokens
+        │          ~18,000 tokens per call, ~80% irrelevant
         ▼
 Step 13 — Foundation Synthesis → 25 docs + Enterprise Knowledge Graph
 ```
-
-**Problems:**
-- Whole files sent even when only 2–3 symbols needed
-- XML files verbose with whitespace/indentation
-- No awareness of which procedures call which — agent must infer
-- ~70–80% of tokens sent are irrelevant to the task
 
 ---
 
@@ -66,323 +78,336 @@ SOURCE FILES (.sql, .pks, .pkb, .frmxml, .pllxml, .mmxml, .java, .py)
         │
         ▼
 Step 1  — Layer 1 extraction (same as before)
-        │  + NEW: XML Canonicalization & Minification
-        │    Strip whitespace/indentation from .frmxml/.pllxml/.mmxml
-        │    20–60% size reduction before anything else runs
+        │  + NEW: XML Structure Minification (structure only — never text nodes)
+        │    Strips whitespace/indentation from XML element structure
+        │    PRESERVES all text node content (trigger bodies, PL/SQL code)
+        │    20–60% size reduction on .frmxml structural overhead
         ▼
-Step 2  — Scan Once (cache file contents — XML stored minified)
+Step 2  — Scan Once (cache file contents — XML stored with minified structure)
         │
         ▼
 Step 2b — NEW: Symbol Index Builder (no AI, pure Python)
-        │  Parses every file, extracts each symbol individually:
-        │    PL/SQL .pkb  → each PROCEDURE / FUNCTION separately
-        │    PL/SQL .pks  → each signature separately
-        │    .frmxml      → each TRIGGER / BUTTON / BLOCK
-        │    .sql schema  → each TABLE / INDEX / SEQUENCE
-        │    .java        → each METHOD / CLASS
+        │  Parses every file using BEGIN/END nesting depth (not regex END name;)
+        │  Tracks nesting to handle END IF / END LOOP / END CASE correctly
+        │  Keys include block/item/param context — no collisions
         │  Output: SYMBOL_INDEX.json
+        │  Also logs FALLBACK_RATE — if >20%, parser needs fixing
         ▼
 Step 2c — NEW: Dependency Graph Builder (no AI, pure Python)
-        │  Reads SYMBOL_INDEX.json, builds 4 graphs:
-        │    Call Graph    — procedure → procedures it calls
-        │    Table Graph   — procedure → tables it touches
-        │    Trigger Graph — form trigger → procedure → table
-        │    Package Graph — package → all its procedures
+        │  Reads SYMBOL_INDEX.json, builds 4 graphs
         │  Output: DEPENDENCY_GRAPH.json
         ▼
-Step 3  — Scan Agent (same — but XML already minified = fewer tokens)
-        │
+Step 3  — Scan Agent (REVISIT after index works — may become redundant)
+        │  Currently: Claude re-extracts what SYMBOL_INDEX already has for free
+        │  Future: Step 3 replaced by SYMBOL_INDEX on large repos
         ▼
 Steps 4–12 — Analysis Agents (BA, DA, TA, AA)
         │
-        │  TURN 1: Agent sees SYMBOL MAP (one line per symbol)
-        │          Agent replies: ["PKG_EMPLOYEE.calculate_salary",
-        │                          "PKG_PAYROLL.calculate_bonus",
-        │                          "EMPLOYEES.table_definition"]
+        │  TURN 1: Agent sees HIERARCHICAL SYMBOL MAP (grouped by package)
+        │          NOT a flat list — groups by package/form/schema
+        │          Agent replies with exact symbol keys
         │
-        │  GRAPH EXPANSION (no AI — pure Python):
-        │    For each requested symbol, look up DEPENDENCY_GRAPH
-        │    Add direct dependencies (1 hop only)
-        │    Deduplicate
-        │    Example: calculate_salary → adds get_grade + SALARY_GRADES
+        │  GRAPH EXPANSION (no AI):
+        │    Add 1-hop direct dependencies
+        │    Fallback: if symbol not in index → send whole file, LOG it
         │
         │  TURN 2: Agent receives SYMBOL BODIES ONLY
-        │          calculate_salary body  = ~45 lines
-        │          calculate_bonus body   = ~30 lines
-        │          get_grade body         = ~20 lines  (auto-added dep)
-        │          EMPLOYEES table def    = ~25 lines
-        │          SALARY_GRADES table    = ~15 lines  (auto-added dep)
-        │          TOTAL per call: ~3,500 tokens
+        │          ~3,500 tokens (vs ~18,000 before)
         ▼
-Step 13 — Foundation Synthesis (same — KG + 25 docs)
+Step 13 — Foundation Synthesis (same)
 ```
 
 ---
 
-## 4. What Is New — Detailed
+## 4. What Is New — With Bugs Fixed
 
-### 4.1 XML Minification (Step 1 add-on)
+### 4.1 XML Minification — Structure Only, Never Text Nodes
 
-**File to change:** `pipeline/layer1/` (add minification step after extraction)
+**What it does:** Strips structural whitespace from Oracle Forms XML — indentation between tags, blank lines between elements. Does NOT touch content inside text nodes.
 
-**What it does:** Strips all indentation, blank lines, and unnecessary whitespace from Oracle Forms XML files before they enter the cache.
+**Why "never text nodes" matters (bug fix from v1):**
 
-**Before:**
+`.pllxml` files store PL/SQL code inside XML text nodes. If a comment is on one line and the next line is code:
 ```xml
-<Form name="HRMS_EMPLOYEE" version="10g">
-  <Block name="EMPLOYEES">
-    <Item
-      name="EMP_ID"
-      dataType="NUMBER"
-      required="true">
-    </Item>
-    <Item
-      name="FIRST_NAME"
-      dataType="CHAR"
-      maxLength="50">
-    </Item>
-  </Block>
-</Form>
+<Trigger>
+  -- check stock first
+  v_qty := 10;
+</Trigger>
 ```
-
-**After:**
+Stripping the newline inside that text node produces:
 ```xml
-<Form name="HRMS_EMPLOYEE" version="10g"><Block name="EMPLOYEES"><Item name="EMP_ID" dataType="NUMBER" required="true"/><Item name="FIRST_NAME" dataType="CHAR" maxLength="50"/></Block></Form>
+<Trigger>  -- check stock first  v_qty := 10;</Trigger>
+```
+The `--` comment now swallows `v_qty := 10;` — silently broken logic.
+
+**Correct approach — minify structure, preserve text:**
+```python
+# WRONG — strips everything including text nodes
+xml_string.replace('\n', '').replace('  ', '')
+
+# CORRECT — use xml.etree to minify only structural whitespace
+import xml.etree.ElementTree as ET
+
+def minify_xml_structure(xml_path):
+    tree = ET.parse(xml_path)
+    # Only strip whitespace from tail/text that is pure whitespace
+    # Never touch text that contains actual content
+    for elem in tree.iter():
+        if elem.text and elem.text.strip() == '':
+            elem.text = None          # pure-whitespace text between tags → remove
+        elif elem.text:
+            pass                      # has real content → leave it completely alone
+        if elem.tail and elem.tail.strip() == '':
+            elem.tail = None
+    return ET.tostring(tree.getroot(), encoding='unicode')
 ```
 
-**Saving:** 20–60% on `.frmxml`/`.pllxml`/`.mmxml` files
-**Risk:** Zero — whitespace is not semantically meaningful in XML
-**Library:** Python standard `xml.etree.ElementTree` — no new dependency
+**Saving:** 20–60% on structural overhead in `.frmxml`. Less on `.pllxml` (more text content).
+**Risk after fix:** Very low — only pure-whitespace nodes removed. Test on one `.pllxml` before rolling out.
+**Library:** Python `xml.etree.ElementTree` — no new dependency.
 
 ---
 
-### 4.2 Symbol Index Builder (Step 2b — new file)
+### 4.2 Symbol Index Builder — Nesting Depth, Not Regex
 
-**New file:** `pipeline/symbol_index_builder.py`
+**Bug in v1:** The end-of-procedure rule said `END name;`. Real PL/SQL uses plain `END;`.
 
-**What it does:** Parses every source file and creates one entry per symbol (procedure, function, trigger, table, form block). Each entry stores the file path, line numbers, what it calls, and what calls it.
+Verified against `PKG_INVENTORY.sql` in the sample:
+```sql
+64: END;   ← GET_PRODUCT_DETAILS ends here
+83: END;   ← VALIDATE_STOCK_AND_CALCULATE ends here  
+93: END;   ← CALCULATE_LINE_TOTAL ends here
+```
+Zero out of five would have matched `END name;`. Parser finds no boundaries.
 
-**Output — `SYMBOL_INDEX.json`:**
-```json
-{
-  "PKG_EMPLOYEE.calculate_salary": {
-    "file": "plsql/PKG_EMPLOYEE.pkb",
-    "type": "procedure",
-    "lines": [120, 165],
-    "package": "PKG_EMPLOYEE",
-    "calls": ["PKG_PAYROLL.get_grade", "SALARY_GRADES"],
-    "called_by": ["HRMS_EMPLOYEE.WHEN-BUTTON-PRESSED"]
-  },
-  "PKG_PAYROLL.get_grade": {
-    "file": "plsql/PKG_PAYROLL.pkb",
-    "type": "procedure",
-    "lines": [45, 72],
-    "package": "PKG_PAYROLL",
-    "calls": ["SALARY_GRADES"],
-    "called_by": ["PKG_EMPLOYEE.calculate_salary"]
-  },
-  "HRMS_EMPLOYEE.WHEN-BUTTON-PRESSED": {
-    "file": "forms/HRMS_EMPLOYEE.frmxml",
-    "type": "trigger",
-    "lines": [45, 52],
-    "form": "HRMS_EMPLOYEE",
-    "calls": ["PKG_EMPLOYEE.calculate_salary"],
-    "called_by": []
-  },
-  "EMPLOYEES.table_definition": {
-    "file": "schema/01_core_tables.sql",
-    "type": "table",
-    "lines": [1, 35],
-    "columns": ["EMP_ID", "FIRST_NAME", "LAST_NAME", "HIRE_DATE", "SALARY"],
-    "calls": [],
-    "called_by": ["PKG_EMPLOYEE.calculate_salary", "PKG_EMPLOYEE.hire_employee"]
-  }
-}
+**Worse bug:** `END IF;` at line 82 is *inside* `VALIDATE_STOCK_AND_CALCULATE`. A naive "look for END" stops there and chops the procedure body in half. No error — just wrong analysis output sent to Claude.
+
+**Correct approach — track BEGIN/END nesting depth:**
+```python
+def extract_plsql_procedures(file_text):
+    symbols = []
+    depth = 0
+    in_proc = False
+    proc_name = None
+    proc_start = None
+
+    for i, line in enumerate(file_text.splitlines()):
+        stripped = line.strip().upper()
+
+        # Detect procedure/function start
+        if re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped) and not in_proc:
+            m = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped)
+            proc_name = m.group(2)
+            proc_start = i
+            depth = 0
+            in_proc = True
+
+        if in_proc:
+            # Count BEGIN keywords (increase depth)
+            if stripped == 'BEGIN' or stripped.startswith('BEGIN '):
+                depth += 1
+            # Only count plain END; or END <proc_name>; — not END IF/LOOP/CASE
+            if re.match(r'^END(\s+\w+)?\s*;', stripped):
+                if not re.match(r'^END\s+(IF|LOOP|CASE|FOR|WHILE)\b', stripped):
+                    depth -= 1
+                    if depth == 0:
+                        symbols.append({
+                            'name': proc_name,
+                            'start': proc_start,
+                            'end': i
+                        })
+                        in_proc = False
+
+    return symbols
 ```
 
-**Parser rules per file type:**
-
-| File type | Symbol boundary | Start pattern | End pattern |
-|---|---|---|---|
-| `.pkb` | Procedure/Function | `PROCEDURE name IS` / `FUNCTION name` | `END name;` |
-| `.pks` | Procedure signature | `PROCEDURE name(` | `;` |
-| `.frmxml` | Trigger | `<Trigger name="..."` | `</Trigger>` |
-| `.frmxml` | Block | `<Block name="..."` | `</Block>` |
-| `.sql` | Table | `CREATE TABLE name` | `);` |
-| `.sql` | Index/Sequence | `CREATE INDEX/SEQUENCE` | `;` |
-| `.java` | Method | `public/private/protected ... name(` | closing `}` |
+This correctly handles `END IF;`, `END LOOP;`, `END CASE;` — skips them.
 
 ---
 
-### 4.3 Dependency Graph Builder (Step 2c — new file)
+### 4.3 Symbol Keys — No Collisions
 
-**New file:** `pipeline/dependency_graph_builder.py`
+**Bug in v1:** Keys were `PACKAGE.procedure_name`. Three problems:
 
-**What it does:** Reads `SYMBOL_INDEX.json` and builds 4 directed graphs showing all relationships between symbols.
+1. **Form triggers:** `WHEN_BUTTON_PRESSED` appears on product_id item, quantity item, and the button — all collapse to `HRMS_EMPLOYEE.WHEN_BUTTON_PRESSED`. Two get lost.
+2. **PL/SQL declarations vs bodies:** `GET_PRODUCT_DETAILS` appears at line 8 (declaration) and line 50 (body). Same key, two different things.
+3. **Overloaded procedures:** Same name, different parameters — both collide.
 
-**Output — `DEPENDENCY_GRAPH.json`:**
-```json
-{
-  "call_graph": {
-    "PKG_EMPLOYEE.calculate_salary": ["PKG_PAYROLL.get_grade"],
-    "PKG_PAYROLL.get_grade": [],
-    "HRMS_EMPLOYEE.WHEN-BUTTON-PRESSED": ["PKG_EMPLOYEE.calculate_salary"]
-  },
-  "table_graph": {
-    "PKG_EMPLOYEE.calculate_salary": ["EMPLOYEES", "SALARY_GRADES"],
-    "PKG_EMPLOYEE.hire_employee": ["EMPLOYEES", "EMPLOYEE_HISTORY"]
-  },
-  "trigger_graph": {
-    "HRMS_EMPLOYEE.WHEN-BUTTON-PRESSED": {
-      "calls": "PKG_EMPLOYEE.calculate_salary",
-      "touches_tables": ["EMPLOYEES", "SALARY_GRADES"]
-    }
-  },
-  "package_graph": {
-    "PKG_EMPLOYEE": [
-      "calculate_salary", "hire_employee", "terminate_employee",
-      "transfer_employee", "promote_employee", "get_employee"
-    ]
-  }
-}
-```
+**Correct key format:**
 
-**Used by:** Graph Expansion step between Turn 1 and Turn 2
-
----
-
-### 4.4 Symbol Map (replaces File Map in Turn 1)
-
-**Files to change:** All 4 agent runners (`ba_agent1_runner.py`, `da_agent1_runner.py`, `aa_agent1_runner.py`, `ta_agent1_runner.py`) and `base_runner.py`
-
-**What changes:** `build_file_map()` replaced with `build_symbol_map()` which reads `SYMBOL_INDEX.json` and produces one line per symbol instead of one line per file.
-
-**Before (File Map sent to Turn 1):**
-```
-plsql/PKG_EMPLOYEE.pkb
-plsql/PKG_PAYROLL.pkb
-plsql/PKG_LEAVE.pkb
-schema/01_core_tables.sql
-forms/HRMS_EMPLOYEE.frmxml
-```
-
-**After (Symbol Map sent to Turn 1):**
-```
-PKG_EMPLOYEE.calculate_salary     [procedure]  calls: get_grade, SALARY_GRADES
-PKG_EMPLOYEE.hire_employee        [procedure]  calls: EMPLOYEES, EMPLOYEE_HISTORY
-PKG_EMPLOYEE.terminate_employee   [procedure]  calls: EMPLOYEES, EMPLOYEE_HISTORY
-PKG_PAYROLL.calculate_bonus       [procedure]  calls: EMPLOYEES, PAY_GRADES
-PKG_PAYROLL.get_grade             [procedure]  calls: SALARY_GRADES
-EMPLOYEES.table_definition        [table]      columns: EMP_ID, FIRST_NAME, SALARY...
-HRMS_EMPLOYEE.WHEN-BUTTON-PRESSED [trigger]    calls: PKG_EMPLOYEE.calculate_salary
-```
-
-Agent can now request exactly the symbols it needs — no whole files.
-
----
-
-### 4.5 Graph Expansion (new function in base_runner.py)
-
-**What it does:** After Turn 1 returns a list of requested symbols, this function looks up each symbol in `DEPENDENCY_GRAPH.json` and adds its direct dependencies (1 hop).
-
-**Example:**
-```
-Turn 1 requests:          Graph expander adds:       Final Turn 2 receives:
-calculate_salary    →     get_grade (called by it)   calculate_salary body
-                          SALARY_GRADES (table used) get_grade body
-                                                     SALARY_GRADES definition
-```
-
-**Why 1 hop only:** Going deeper (2–3 hops) risks including too many symbols and defeating the purpose. The agent can always ask for more in the analysis if needed.
-
-**Fallback:** If a requested symbol is not found in the index (parser missed it), the whole file is sent instead — same as current behaviour. No accuracy regression.
-
----
-
-## 5. Token Savings — Detailed Numbers
-
-For the Oracle HRMS source (`source/ts-plsql-oracle-forms-hrms`):
-
-### Per Turn 2 call (BA Agent example):
-
-| | Before | After |
+| Symbol type | Key format | Example |
 |---|---|---|
-| Files/symbols sent | 3 whole files | 8 symbol bodies |
-| PKG_EMPLOYEE.pkb | 400 lines (all 15 procs) | 3 procedures × ~45 lines = 135 lines |
-| PKG_PAYROLL.pkb | 350 lines (all 12 procs) | 2 procedures × ~40 lines = 80 lines |
-| HRMS_EMPLOYEE.frmxml | 600 lines (full XML) | 2 triggers × ~25 lines = 50 lines + auto-deps ~65 lines |
-| **Total** | **~1,350 lines / ~18,000 tokens** | **~330 lines / ~3,500 tokens** |
-| **Saving** | — | **~80%** |
+| PL/SQL procedure | `PACKAGE.PROC_NAME` | `PKG_EMPLOYEE.CALCULATE_SALARY` |
+| PL/SQL overload | `PACKAGE.PROC_NAME#2` | `PKG_EMPLOYEE.GET_EMPLOYEE#2` |
+| Form trigger on item | `FORM.BLOCK.ITEM.TRIGGER` | `HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED` |
+| Form trigger on block | `FORM.BLOCK.TRIGGER` | `HRMS_EMPLOYEE.EMPLOYEES.POST_QUERY` |
+| Form trigger on form | `FORM.TRIGGER` | `HRMS_EMPLOYEE.ON_ERROR` |
+| Table | `SCHEMA.TABLE_NAME` | `PUBLIC.EMPLOYEES` |
+| Declaration (spec) | `PACKAGE.PROC_NAME.spec` | `PKG_EMPLOYEE.CALCULATE_SALARY.spec` |
 
-### Across all 9 agent calls (Steps 4–12):
+---
 
-| | Before | After |
-|---|---|---|
-| Total tokens for Steps 4–12 | ~160,000 | ~32,000–50,000 |
-| Saving | — | ~65–80% |
-| Cost at $3/MTok (Sonnet) | ~$0.48 | ~$0.10–0.15 |
+### 4.4 Hierarchical Symbol Map (not flat list)
 
-### Full pipeline:
+**Bug in v1:** One line per symbol. On a 10,000-file app with 100,000+ symbols, Turn 1 prompt becomes larger than the whole-file approach it replaces.
+
+**Correct approach — grouped by package:**
+```
+PACKAGE: PKG_EMPLOYEE  [11 procedures]
+  calculate_salary      calls: get_grade, SALARY_GRADES
+  hire_employee         calls: EMPLOYEES, EMPLOYEE_HISTORY
+  terminate_employee    calls: EMPLOYEES, EMPLOYEE_HISTORY
+  ... (8 more)
+
+PACKAGE: PKG_PAYROLL  [12 procedures]
+  calculate_bonus       calls: EMPLOYEES, PAY_GRADES
+  get_grade             calls: SALARY_GRADES
+  ... (10 more)
+
+FORM: HRMS_EMPLOYEE  [6 triggers, 3 blocks]
+  EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED     calls: PKG_EMPLOYEE.calculate_salary
+  EMPLOYEES.POST_QUERY                     calls: PKG_EMPLOYEE.get_employee
+  ... (4 more)
+
+SCHEMA: PUBLIC  [30 tables]
+  EMPLOYEES             columns: EMP_ID, FIRST_NAME, LAST_NAME, HIRE_DATE, SALARY
+  SALARY_GRADES         columns: GRADE_ID, MIN_SALARY, MAX_SALARY
+  ... (28 more)
+```
+
+Agent requests by key: `PKG_EMPLOYEE.calculate_salary`, `HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED` — unambiguous.
+
+---
+
+### 4.5 Fallback Rate Logging (new — not in v1)
+
+**Why:** Silent fallback (send whole file when symbol not found) is how you think you saved money when you didn't. Must be measured.
+
+```python
+def graph_expand_with_fallback(requested_symbols, symbol_index, file_cache):
+    result = []
+    fallback_count = 0
+    for sym in requested_symbols:
+        if sym in symbol_index:
+            result.append(get_symbol_body(sym, symbol_index))
+            result.extend(get_1hop_deps(sym, symbol_index))
+        else:
+            # Fallback — whole file
+            result.append(get_whole_file(sym, file_cache))
+            fallback_count += 1
+            print(f"  [FALLBACK] Symbol not in index: {sym}")
+
+    fallback_rate = fallback_count / len(requested_symbols)
+    if fallback_rate > 0.20:
+        print(f"  ⚠ HIGH FALLBACK RATE: {fallback_rate:.0%} — parser needs fixing")
+    return result
+```
+
+If fallback rate is >20%, the savings are imaginary and the parser needs work before continuing.
+
+---
+
+### 4.6 Step 3 — The Real Scaling Problem
+
+**What v1 missed:** Step 3 (Scan Agent) reads every file in the codebase and asks Claude to extract all classes, methods, tables, columns. This is:
+1. The dominant cost on large repos (grows linearly with repo size)
+2. Largely doing the same job as SYMBOL_INDEX.json — for money
+
+Once SYMBOL_INDEX.json exists and is working, Step 3 is partially redundant. The correct long-term move is:
+
+| Repo size | Recommendation |
+|---|---|
+| Small (~50 files, current HRMS) | Keep Step 3 — cost is low, SYMBOL_INDEX is new |
+| Medium (~300 files) | Run both, compare output quality |
+| Large (~1000+ files) | Replace Step 3 with SYMBOL_INDEX — it's free and more structured |
+
+**This is the highest-value change at scale — not Steps 4–12.**
+
+---
+
+## 5. Revised Token Savings
+
+**Corrected from v1** — v1 was too optimistic on Steps 4–12 and understated Step 3's importance at scale.
+
+### Small repo (current HRMS, ~50 files):
 
 | Phase | Before | After | Saving |
 |---|---|---|---|
-| Step 3 (Scan Agent — XML minified) | ~$2–3 | ~$1.5–2 | ~25% |
-| Steps 4–12 (Analysis agents) | ~$4–6 | ~$1–2 | ~65–80% |
-| Step 13 (Synthesis) | ~$1–2 | ~$1–2 | None |
-| **Total reverse engineering** | **~$7–11** | **~$3–6** | **~50–60%** |
+| Step 3 (XML minified structure) | ~$2–3 | ~$1.5–2 | ~25% |
+| Steps 4–12 (symbol-level agents) | ~$4–6 | ~$1–2 | ~65–80% |
+| Step 13 (synthesis) | ~$1–2 | ~$1–2 | None |
+| **Total reverse engineering** | **~$7–11** | **~$3–6** | **~45–55%** |
+
+### Large repo (~1000 files, future):
+
+| Phase | Before | After | Saving |
+|---|---|---|---|
+| Step 3 | ~$40–60 | ~$5–10 (or $0 if replaced) | ~80–100% |
+| Steps 4–12 | ~$20–30 | ~$5–10 | ~65–80% |
+| **Total** | **~$60–90** | **~$10–20** | **~75–80%** |
+
+**The real money is Step 3 at scale, not Steps 4–12.**
 
 ---
 
-## 6. Accuracy & Quality Assessment
+## 6. Accuracy — Honest Assessment
 
-| Aspect | Before | After | Change |
-|---|---|---|---|
-| Schema coverage | ~85–90% | ~85–90% | Same |
-| Procedure coverage | ~85–90% | ~85–90% | Same |
-| Form trigger coverage | ~85–90% | ~85–90% | Same |
-| Output quality | Good | Slightly better | Less noise in context |
-| Risk of missing symbols | Low | Low + fallback | Fallback covers parser gaps |
+**v1 claimed "~85–90% → ~85–90% — Same". That was a guess.**
 
-**Why quality improves slightly:** Agent context is 100% relevant symbols. No irrelevant procedures diluting the analysis. Agent focuses entirely on requested logic.
+The ~85–90% figure has no measured baseline behind it. It was estimated from code coverage, not from comparing pipeline output against ground truth.
 
-**New risk:** Symbol parser boundary detection. Mitigated by fallback — if symbol not in index, whole file sent.
+**One real new risk not in v1:**
+
+Some business rules only appear when you see a whole package at once. Example: every procedure in `PKG_PAYROLL` checks `v_status NOT IN ('TERMINATED', 'ON_LEAVE')` — this pattern is only visible when you see all procedures together. Slicing into individual symbols can hide cross-procedure patterns.
+
+**Mitigation:** Test symbol-level retrieval on one full package before rolling out. Compare output of BA Agent with whole-file vs symbol-level on the same package. If cross-procedure patterns disappear from the output, increase hop count to 2 or send the full package when any symbol from it is requested.
+
+**Recommendation:** Measure accuracy baseline first (compare existing results against source manually), then measure again after implementation.
 
 ---
 
-## 7. Implementation Plan
+## 7. Revised Implementation Plan
 
-| Step | What to build | File | Effort |
+**Honest effort estimates — v1 was too optimistic:**
+
+| Step | What to build | File | Realistic effort |
 |---|---|---|---|
-| 1 | XML minification | `pipeline/layer1/xml_minifier.py` | 2–3 hours |
-| 2 | Symbol Index Builder | `pipeline/symbol_index_builder.py` | 4–6 hours |
-| 3 | Dependency Graph Builder | `pipeline/dependency_graph_builder.py` | 3–4 hours |
-| 4 | `build_symbol_map()` in base_runner | `pipeline/base_runner.py` | 2–3 hours |
-| 5 | Graph expansion function | `pipeline/base_runner.py` | 2–3 hours |
-| 6 | Update 4 agent runners | `pipeline/runners/*_agent1_runner.py` | 2–3 hours |
-| 7 | Wire new steps into `run.py` | `run.py` | 1 hour |
-| 8 | Test on HRMS source, verify output | — | 2–3 hours |
-| **Total** | | | **~18–26 hours** |
+| 1 | XML structure minification (text-safe) | `pipeline/layer1/xml_minifier.py` | 3–4 hours + test on .pllxml |
+| 2 | PL/SQL parser (nesting depth, no regex) | `pipeline/symbol_index_builder.py` | 2–3 days |
+| 3 | Oracle Forms XML parser (collision-safe keys) | above | 1 day |
+| 4 | SQL DDL parser (tables, indexes, sequences) | above | 4–6 hours |
+| 5 | Dependency Graph Builder | `pipeline/dependency_graph_builder.py` | 3–4 hours |
+| 6 | Hierarchical Symbol Map + fallback logger | `pipeline/base_runner.py` | 4–6 hours |
+| 7 | Update 4 agent runners | `pipeline/runners/*_agent1_runner.py` | 2–3 hours |
+| 8 | Wire new steps into `run.py` | `run.py` | 1 hour |
+| 9 | Accuracy test — one package, compare output | — | 4–6 hours |
+| **Total** | | | **~4–6 days** |
+
+v1 said 18–26 hours. Realistic is **4–6 days** once edge cases appear in the parser.
 
 ### Recommended order:
-1. XML minification first — isolated, zero risk, immediate saving
-2. Symbol Index + Dependency Graph — build and verify output files
-3. Update base_runner + agent runners — plug into existing flow
-4. Full pipeline test run on HRMS source
+1. **XML minification first** — isolated, 3–4 hours, zero risk if text nodes are preserved
+2. **Measure accuracy baseline** — before touching symbol parsing
+3. **PL/SQL parser** — hardest part, build with nesting depth from day one
+4. **Test one full package** — verify cross-procedure patterns still appear
+5. **Oracle Forms + SQL parsers** — add once PL/SQL parser is solid
+6. **Dependency Graph + agent runner updates** — plug in last
+7. **Revisit Step 3** — once index is working and fallback rate is <5%
 
 ---
 
 ## 8. Files Changed vs Files Added
 
-### New files (pure Python, no AI):
+### New files:
 ```
-pipeline/layer1/xml_minifier.py          ← XML canonicalization + minification
-pipeline/symbol_index_builder.py         ← parses all source → SYMBOL_INDEX.json
-pipeline/dependency_graph_builder.py     ← builds graphs → DEPENDENCY_GRAPH.json
+pipeline/layer1/xml_minifier.py          ← XML structure minification (text-safe)
+pipeline/symbol_index_builder.py         ← nesting-depth parser → SYMBOL_INDEX.json
+pipeline/dependency_graph_builder.py     ← graphs → DEPENDENCY_GRAPH.json
 ```
 
 ### Modified files:
 ```
-pipeline/base_runner.py                  ← add build_symbol_map(), graph_expand()
+pipeline/base_runner.py                  ← hierarchical symbol map, graph_expand + fallback logger
 pipeline/runners/ba_agent1_runner.py     ← use symbol map in Turn 1
 pipeline/runners/da_agent1_runner.py     ← use symbol map in Turn 1
 pipeline/runners/aa_agent1_runner.py     ← use symbol map in Turn 1
@@ -401,43 +426,45 @@ results/                                ← existing outputs untouched
 
 ---
 
-## 9. What Is NOT Changing
+## 9. Decision Needed From Team
 
-- Forward engineering (Batch 1 + 2) — fully working, no changes needed
-- All 25 output documents — same format, same content
-- Enterprise Knowledge Graph — same structure
-- Agent prompts — same `.md` files in `Prompts_Ready_To_Use/`
-- Resume-safe behaviour — still checkpointed at every step
-- GitHub URL — same repo
-
----
-
-## 10. Decision Needed From Team
-
-| Question | Options |
+| Question | Recommendation |
 |---|---|
-| Implement now or after forward engineering completes? | Now / After Batch 2 |
-| Start with XML minification only (low risk) or full new arch? | Partial / Full |
-| Acceptable parser fallback behaviour? | Send whole file (proposed) / Fail loudly |
-| Target accuracy after change? | Keep ~85–90% / Push for higher |
+| Start now or after forward engineering? | XML minification now. Rest after Batch 2 completes. |
+| Partial or full? | Partial — XML only first, measure, then decide. |
+| Fallback behaviour? | Send whole file AND log it. Silent fallback = false savings. |
+| Accuracy target? | Measure baseline first. Can't hold a number never measured. |
+| Step 3 long-term? | Plan to replace with SYMBOL_INDEX on large repos. Not now. |
 
 ---
 
-## 11. Summary
+## 10. Summary (v2 — corrected)
 
-| | Before | After |
-|---|---|---|
-| What Turn 2 receives | Whole files | Symbol bodies + direct deps only |
-| Tokens per agent call | ~18,000 | ~3,500 |
-| Total pipeline cost | ~$25–55 | ~$15–35 |
-| Reverse engineering cost | ~$7–11 | ~$3–6 |
-| Accuracy | ~85–90% | ~85–90% |
-| New dependencies | None | None (stdlib only) |
-| Implementation effort | — | ~18–26 hours |
-| Forward engineering affected | — | Not at all |
-
-**Recommendation:** Implement XML minification immediately (2–3 hours, zero risk). Plan Symbol Index + Dependency Graph for the next session after forward engineering completes.
+| | Before | After | Notes |
+|---|---|---|---|
+| What Turn 2 receives | Whole files | Symbol bodies + 1-hop deps | After parser is solid |
+| Tokens per agent call | ~18,000 | ~3,500 | Only when fallback rate <5% |
+| Reverse eng cost (small repo) | ~$7–11 | ~$3–6 | ~45–55% saving |
+| Reverse eng cost (large repo) | ~$60–90 | ~$10–20 | Step 3 replaced |
+| Accuracy | Unmeasured ~85–90% | Measure first | Cross-procedure risk |
+| New dependencies | None | None | stdlib only |
+| Implementation effort | — | 4–6 days | v1 said 18–26 hours — too low |
+| Forward engineering affected | — | Not at all | — |
 
 ---
 
-*Proposal written: 2026-07-28 | Pipeline version: v2 | Source: ts-plsql-oracle-forms-hrms*
+## 11. What Changed From v1 to v2
+
+| v1 claim | v2 correction |
+|---|---|
+| `END name;` rule for PL/SQL | Wrong — real files use `END;`. Use nesting depth. |
+| "Zero risk" XML minification | False for .pllxml. Minify structure only, never text nodes. |
+| `PACKAGE.name` as key | Collides on overloads and same-trigger-name on different items. Include block/item/params. |
+| Flat symbol map | Breaks at scale. Must be hierarchical (grouped by package/form). |
+| Savings focused on Steps 4–12 | Step 3 is the real scaling cost. Address it once index works. |
+| 18–26 hours effort | 4–6 days realistic once parser edge cases appear. |
+| "85–90% → 85–90% Same" | No baseline measured. Cross-procedure pattern risk not listed. |
+
+---
+
+*Proposal v1 written: 2026-07-28 | v2 updated same day after peer review | Pipeline version: v2*
