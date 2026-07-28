@@ -40,6 +40,31 @@ Include at minimum: the dependency/build manifest (e.g. pyproject.toml / package
 / pom.xml — whichever fits the target stack), a minimal entrypoint file with a single
 health-check route, a .gitignore, and a README.md explaining how to install
 dependencies and run it locally.
+
+MANDATORY for React/TypeScript frontend — the frontend/package.json MUST include
+these packages (they are always needed across all sprints):
+  dependencies: axios
+  devDependencies: @testing-library/user-event, @testing-library/react,
+                   @testing-library/jest-dom, ts-jest, jest, jest-environment-jsdom
+
+MANDATORY for React/TypeScript frontend — create these two files:
+1. frontend/jest.config.cjs with content:
+   module.exports = {
+     preset: 'ts-jest',
+     testEnvironment: 'jsdom',
+     setupFilesAfterFramework: ['<rootDir>/src/setupTests.ts'],
+     testMatch: ['**/*.test.ts', '**/*.test.tsx'],
+     moduleNameMapper: { '\\\\.(css|less|scss)$': '<rootDir>/jest.styleMock.cjs' },
+     globals: { 'ts-jest': { tsconfig: { module: 'CommonJS', target: 'ES2020' }, diagnostics: false } },
+     setupFiles: ['<rootDir>/jest.importMetaSetup.cjs'],
+   };
+2. frontend/jest.importMetaSetup.cjs with content:
+   if (typeof globalThis.importMeta === 'undefined') {
+     Object.defineProperty(globalThis, 'importMeta', { value: { env: {} } });
+   }
+3. frontend/jest.styleMock.cjs with content:
+   module.exports = {};
+Do NOT generate jest.config.js or jest.config.ts — only jest.config.cjs.
 """
 
 

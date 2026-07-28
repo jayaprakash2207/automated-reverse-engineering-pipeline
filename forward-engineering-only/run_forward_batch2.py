@@ -36,7 +36,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "pipeline_forward"))
-from fwd_base import (load_ledger, update_ledger_entry, append_learning, load_learnings_text)  # noqa: E402
+from fwd_base import (load_ledger, update_ledger_entry, append_learning, load_learnings_text,  # noqa: E402
+                       cleanup_sprint_output)
 
 import backend_dev_runner  # noqa: E402
 import security_review_runner  # noqa: E402
@@ -102,6 +103,7 @@ def _run_one_sprint(sprint: dict, input_dir: str, output_dir: str,
             frontend_dev_runner.run(sprint, input_dir, output_dir, feedback=feedback)
             data_migration_runner.run(sprint, input_dir, output_dir, migrate_data=migrate_data)
             test_writer_runner.run(sprint, input_dir, output_dir, feedback=feedback)
+            cleanup_sprint_output(str(Path(output_dir) / "new_app"))
             test_result = test_executor_runner.run(sprint, output_dir)
         except Exception as exc:
             # Deliberately broad: a hard Claude CLI failure (RuntimeError from

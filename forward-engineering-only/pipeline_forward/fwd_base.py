@@ -29,6 +29,7 @@ __all__ = [
     "atomic_write_json", "load_ledger", "update_ledger_entry",
     "append_learning", "load_learnings_text",
     "sprint_slug", "load_sprint_manifest", "save_sprint_manifest",
+    "cleanup_sprint_output",
 ]
 
 
@@ -267,6 +268,174 @@ def load_learnings_text(output_dir: str) -> str:
     for entry in learnings:
         lines.append(f"- [{entry['sprint']}] {entry['root_cause']} → fix: {entry['fix_applied']}")
     return "\n".join(lines)
+
+
+# ── Post-sprint cleanup — removes AI generation artifacts before tests run ──────
+# Fixes known issues that occur every sprint regardless of sprint content.
+# Safe to run after every frontend generation — only removes artifacts, never
+# touches Java backend, Spring Boot services, Flyway SQL, or React business logic.
+
+def cleanup_sprint_output(new_app_dir: str) -> None:
+    """
+    Run after frontend_dev_runner completes, before test_executor_runner.
+    Silently removes all known AI generation artifacts so tests run clean.
+    """
+    frontend = Path(new_app_dir) / "frontend"
+    if not frontend.exists():
+        return
+
+    _fix_jest_config_duplicates(frontend)
+    _fix_import_meta(frontend)
+    _fix_app_tsx_export(frontend)
+    _strip_code_fence_artifacts(frontend)
+    _strip_end_file_markers(frontend)
+    _delete_orphan_audit_folders(frontend)
+    _fix_stale_node_modules(frontend)
+    print("  [Cleanup] Done — AI generation artifacts removed.")
+
+
+def _fix_jest_config_duplicates(frontend: Path) -> None:
+    """Fix 2 — keep only jest.config.cjs, delete .js and .ts variants."""
+    for name in ("jest.config.js", "jest.config.ts"):
+        p = frontend / name
+        if p.exists():
+            p.unlink()
+            print(f"  [Cleanup] Deleted duplicate jest config: {name}")
+
+
+def _fix_import_meta(frontend: Path) -> None:
+    """Fix 3 — replace import.meta.env.* with process.env fallback pattern."""
+    src = frontend / "src"
+    if not src.exists():
+        return
+    import_meta_re = re.compile(r'import\.meta\.env\.(\w+)')
+    for p in list(src.rglob("*.ts")) + list(src.rglob("*.tsx")):
+        try:
+            text = p.read_text(encoding="utf-8")
+            if "import.meta" not in text:
+                continue
+            # Replace import.meta.env.SOME_VAR with process.env['SOME_VAR'] ?? ''
+            new_text = import_meta_re.sub(
+                lambda m: f"(typeof process !== 'undefined' ? process.env['{m.group(1)}'] : undefined) ?? ''",
+                text,
+            )
+            if new_text != text:
+                p.write_text(new_text, encoding="utf-8")
+                print(f"  [Cleanup] Fixed import.meta in: {p.name}")
+        except Exception:
+            pass
+
+    # Ensure jest.importMetaSetup.cjs exists
+    setup_file = frontend / "jest.importMetaSetup.cjs"
+    if not setup_file.exists():
+        setup_file.write_text(
+            "if (typeof globalThis.importMeta === 'undefined') {\n"
+            "  Object.defineProperty(globalThis, 'importMeta', { value: { env: {} } });\n"
+            "}\n",
+            encoding="utf-8",
+        )
+        print("  [Cleanup] Created jest.importMetaSetup.cjs")
+
+    # Ensure jest.config.cjs references the setup file and has diagnostics: false
+    jest_cjs = frontend / "jest.config.cjs"
+    if jest_cjs.exists():
+        text = jest_cjs.read_text(encoding="utf-8")
+        changed = False
+        if "jest.importMetaSetup.cjs" not in text:
+            text = text.rstrip().rstrip("}")
+            text += "\n  setupFiles: ['<rootDir>/jest.importMetaSetup.cjs'],\n};\n"
+            changed = True
+        if "diagnostics: false" not in text and "diagnostics:false" not in text:
+            text = text.replace("'ts-jest': {", "'ts-jest': { diagnostics: false,", 1)
+            changed = True
+        if changed:
+            jest_cjs.write_text(text, encoding="utf-8")
+            print("  [Cleanup] Patched jest.config.cjs (importMeta setup + diagnostics:false)")
+
+
+def _fix_app_tsx_export(frontend: Path) -> None:
+    """Fix 4 — ensure App.tsx uses default export."""
+    app = frontend / "src" / "App.tsx"
+    if not app.exists():
+        return
+    text = app.read_text(encoding="utf-8")
+    if "export function App(" in text or "export const App " in text:
+        new_text = text.replace("export function App(", "export default function App(")
+        new_text = re.sub(r"export const App\s*=", "const App =", new_text)
+        if "export default" not in new_text:
+            new_text = new_text.rstrip() + "\nexport default App;\n"
+        if new_text != text:
+            app.write_text(new_text, encoding="utf-8")
+            print("  [Cleanup] Fixed App.tsx — changed to default export")
+
+
+def _strip_code_fence_artifacts(frontend: Path) -> None:
+    """Fix 5 — strip ``` code fence markers from first/last line of .ts/.tsx files."""
+    src = frontend / "src"
+    if not src.exists():
+        return
+    for p in list(src.rglob("*.ts")) + list(src.rglob("*.tsx")):
+        try:
+            lines = p.read_text(encoding="utf-8").splitlines(keepends=True)
+            changed = False
+            if lines and lines[0].strip().startswith("```"):
+                lines = lines[1:]
+                changed = True
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+                changed = True
+            if changed:
+                p.write_text("".join(lines), encoding="utf-8")
+                print(f"  [Cleanup] Stripped code fence artifacts from: {p.name}")
+        except Exception:
+            pass
+
+
+def _strip_end_file_markers(frontend: Path) -> None:
+    """Fix 6 — remove '=== END FILE ===' artifact from generated files."""
+    src = frontend / "src"
+    if not src.exists():
+        return
+    marker = "=== END FILE ==="
+    for p in list(src.rglob("*.ts")) + list(src.rglob("*.tsx")) + list(src.rglob("*.java")):
+        try:
+            text = p.read_text(encoding="utf-8")
+            if marker in text:
+                p.write_text(text.replace(marker, ""), encoding="utf-8")
+                print(f"  [Cleanup] Stripped END FILE marker from: {p.name}")
+        except Exception:
+            pass
+
+
+def _delete_orphan_audit_folders(frontend: Path) -> None:
+    """Fix 7 — delete orphan audit test folders that reference non-existent source paths."""
+    import shutil as _shutil
+    src = frontend / "src"
+    orphan_dirs = [
+        src / "api",
+        src / "components" / "audit",
+        src / "features" / "auditLog",
+        src / "features" / "audit",
+    ]
+    for d in orphan_dirs:
+        if d.exists():
+            _shutil.rmtree(str(d))
+            print(f"  [Cleanup] Deleted orphan folder: {d.relative_to(frontend)}")
+
+
+def _fix_stale_node_modules(frontend: Path) -> None:
+    """Fix 9 — detect and remove stale node_modules with missing/incompatible binaries."""
+    import shutil as _shutil
+    nm = frontend / "node_modules"
+    if not nm.exists():
+        return
+    # Check for esbuild binary — if missing it means node_modules is from a different machine
+    esbuild_bin = nm / ".bin" / "esbuild"
+    esbuild_exe = nm / ".bin" / "esbuild.exe"
+    esbuild_exists = esbuild_bin.exists() or esbuild_exe.exists()
+    if not esbuild_exists:
+        print("  [Cleanup] Stale node_modules detected (esbuild missing) — deleting for fresh npm install")
+        _shutil.rmtree(str(nm))
 
 
 # ── Per-sprint file manifest ────────────────────────────────────────────────────
