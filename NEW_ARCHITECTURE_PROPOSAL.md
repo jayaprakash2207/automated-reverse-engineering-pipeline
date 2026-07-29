@@ -1012,4 +1012,123 @@ This runs before step 1. If old results exist from a different architecture, it 
 
 ---
 
-*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all bugs solved, build-ready specs added | Pipeline version: v2*
+---
+
+### Spec 6 — How `calls` is populated (procedure call + table reference detection)
+
+The parser runs a second scan over each procedure body after extracting its start/end lines. Two patterns to detect:
+
+```python
+import re
+
+def extract_calls(body_lines, all_known_packages, all_known_tables):
+    """
+    body_lines: list of strings — the procedure body only (start..end)
+    all_known_packages: set of package names already indexed e.g. {"PKG_EMPLOYEE", "PKG_PAYROLL"}
+    all_known_tables: set of table names already indexed e.g. {"EMPLOYEES", "DEPARTMENTS"}
+    """
+    calls = set()
+
+    for line in body_lines:
+        upper = line.strip().upper()
+
+        # Pattern 1 — procedure/function call: PACKAGE.PROC_NAME(
+        for m in re.finditer(r'\b([A-Z_]+)\.([A-Z_]+)\s*\(', upper):
+            pkg, proc = m.group(1), m.group(2)
+            if pkg in all_known_packages:
+                calls.add(f"{pkg}.{proc}")
+
+        # Pattern 2 — table reference: FROM / JOIN / INTO / UPDATE <table>
+        for m in re.finditer(
+            r'\b(?:FROM|JOIN|INTO|UPDATE)\s+([A-Z_][A-Z0-9_]*)', upper
+        ):
+            tbl = m.group(1)
+            if tbl in all_known_tables:
+                calls.add(tbl)
+
+    return sorted(calls)
+```
+
+**Two-pass build order:**
+1. First pass — index all symbols (name, file, start, end, type) — `calls = []` for now
+2. Build `all_known_packages` and `all_known_tables` from first pass
+3. Second pass — for each symbol, read its body lines, run `extract_calls()`, populate `calls`
+4. Third pass — populate `called_by` (Spec 7 below)
+
+---
+
+### Spec 7 — `called_by` second pass (exact code)
+
+After `calls` is populated for every symbol, derive `called_by` by inverting the call graph:
+
+```python
+def build_called_by(symbol_index):
+    """
+    Mutates symbol_index in place — adds called_by list to every entry.
+    Run this AFTER extract_calls() has populated calls for all symbols.
+    """
+    # Reset called_by for all symbols
+    for entry in symbol_index.values():
+        entry["called_by"] = []
+
+    # Invert: for every A that calls B, add A to B's called_by
+    for key, entry in symbol_index.items():
+        for callee in entry.get("calls", []):
+            # callee may be a full key or just a table name
+            # Try exact match first, then prefix match
+            if callee in symbol_index:
+                symbol_index[callee]["called_by"].append(key)
+            else:
+                # table reference — find the PUBLIC.TABLE entry
+                table_key = f"PUBLIC.{callee}"
+                if table_key in symbol_index:
+                    symbol_index[table_key]["called_by"].append(key)
+
+    return symbol_index
+```
+
+Call order in `build_symbol_index()`:
+```python
+symbol_index = first_pass_extract_symbols(source_dir)      # names, lines
+symbol_index = second_pass_extract_calls(symbol_index)     # calls[]
+symbol_index = build_called_by(symbol_index)               # called_by[]
+save_json(symbol_index, output_path)
+```
+
+---
+
+### Spec 8 — Standalone procedures in .sql files (parser extension)
+
+Section 4.2 parser only activates after `PACKAGE BODY`. Standalone `CREATE PROCEDURE` / `CREATE FUNCTION` in `.sql` files never set `in_body_section = True` — silently skipped.
+
+**Fix:** Detect two entry points, not one:
+
+```python
+for i, line in enumerate(file_text.splitlines()):
+    stripped = line.strip().upper()
+
+    # Entry point 1 — package body (existing)
+    if re.match(r'PACKAGE\s+BODY\s+\w+', stripped):
+        in_body_section = True
+        current_package = re.match(r'PACKAGE\s+BODY\s+(\w+)', stripped).group(1)
+        continue
+
+    # Entry point 2 — standalone procedure/function in .sql file
+    if re.match(r'CREATE\s+(OR\s+REPLACE\s+)?(PROCEDURE|FUNCTION)\s+\w+', stripped):
+        in_body_section = True
+        current_package = None   # no package — key will be just PROC_NAME
+        # fall through to existing proc detection below
+
+    if not in_body_section:
+        continue
+```
+
+**Key format for standalone procedures:**
+- Inside package body → key: `PKG_NAME.PROC_NAME`
+- Standalone in .sql → key: `PROC_NAME` (no package prefix)
+
+This ensures standalone migration procedures, utility scripts, and trigger definitions in `.sql` files are all indexed correctly.
+
+---
+
+*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all bugs solved, all specs complete | Pipeline version: v2*
