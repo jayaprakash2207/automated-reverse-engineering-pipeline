@@ -16,7 +16,7 @@ This proposal describes a new way to run the reverse engineering phase of our pi
 **What v4 is:**
 - A design plan — correct and fully documented
 - NOT yet built — 8 bugs need to be coded before it runs
-- Estimated ~1 day of coding to make it fully working
+- Estimated ~4–6 days of coding to make it fully working (see Section 7)
 
 **What we need from you:**
 
@@ -147,7 +147,7 @@ The summary gives the agent context about what a package contains and how proced
 | Structural cross-procedure visibility | ✅ Visible | ❌ Hidden | **✅ Preserved via summary** |
 | Logic pattern visibility | ✅ Visible | ❌ Hidden | **⚠ Baseline required to confirm** |
 | Accuracy vs current | Baseline (unmeasured) | Unknown risk | **Measure before and after** |
-| Token saving vs current | — | ~80% | **~65–70%** |
+| Token saving vs current | — | ~80% | **~40–70% (size-dependent)** |
 | Safe to implement? | — | Needs baseline test | **After 8 bugs fixed + baseline measured** |
 
 ---
@@ -484,6 +484,8 @@ def graph_expand_with_fallback(requested_symbols, symbol_index, file_cache):
 
 If fallback rate is >20%, the savings are imaginary and the parser needs work before continuing.
 
+**Note:** This is the simplified version. Spec 14 (Section 13) adds circular dependency protection via a `visited` set — use Spec 14's version when implementing.
+
 ---
 
 ### 4.6 Step 3 — The Real Scaling Problem
@@ -796,7 +798,7 @@ Fix #8 (version stamp) — do this first, prevents mixing old+new output
                                             → End to end working ✅
 ```
 
-**Total estimated effort once bugs are fixed:** 1 day.
+**Total estimated effort for just the 8 bug fixes:** ~1 day of focused coding. Full implementation including parsers, agent runner updates, and baseline measurement: **4–6 days** (see Section 7).
 
 ---
 
@@ -804,7 +806,7 @@ Fix #8 (version stamp) — do this first, prevents mixing old+new output
 
 ## 13. Implementation Specs — Build-Ready Details
 
-These 5 specs are what a developer needs before writing a single line of code. Without them, the builder would have to guess. All are derived directly from the design in Sections 3 and 4.
+These 21 specs (Spec 1–21) are what a developer needs before writing a single line of code. Without them, the builder would have to guess. All are derived directly from the design in Sections 3 and 4.
 
 ---
 
