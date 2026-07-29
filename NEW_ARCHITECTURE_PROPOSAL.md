@@ -1131,4 +1131,218 @@ This ensures standalone migration procedures, utility scripts, and trigger defin
 
 ---
 
+### Spec 9 — Oracle Forms XML parser (collision-safe keys)
+
+Oracle Forms `.frmxml` files store triggers inside nested XML. Each trigger is scoped to a form, block, or item — same trigger name appears at multiple levels. The parser must track this nesting to build collision-safe keys.
+
+**XML structure to parse:**
+```xml
+<Form name="HRMS_EMPLOYEE">
+  <Trigger name="ON_ERROR">...</Trigger>          <!-- form-level -->
+  <Block name="EMPLOYEES">
+    <Trigger name="POST_QUERY">...</Trigger>       <!-- block-level -->
+    <Item name="EMP_ID">
+      <Trigger name="WHEN_BUTTON_PRESSED">...</Trigger>  <!-- item-level -->
+    </Item>
+  </Block>
+</Form>
+```
+
+**Parser:**
+```python
+from lxml import etree
+
+def parse_frmxml(file_path, symbol_index):
+    tree = etree.parse(file_path)
+    root = tree.getroot()
+    form_name = root.get("name", "UNKNOWN_FORM")
+
+    # Strip namespace if present
+    def tag(el): return el.tag.split("}")[-1] if "}" in el.tag else el.tag
+
+    for elem in root.iter():
+        t = tag(elem)
+
+        if t == "Trigger":
+            trigger_name = elem.get("name", "UNKNOWN")
+            # Walk up to determine scope
+            parent = elem.getparent()
+            grandparent = parent.getparent() if parent is not None else None
+
+            p_tag = tag(parent) if parent is not None else ""
+            gp_tag = tag(grandparent) if grandparent is not None else ""
+
+            if p_tag == "Item" and gp_tag == "Block":
+                # item-level trigger
+                block_name = grandparent.get("name", "UNKNOWN")
+                item_name = parent.get("name", "UNKNOWN")
+                key = f"{form_name}.{block_name}.{item_name}.{trigger_name}"
+                sym_type = "trigger_item"
+            elif p_tag == "Block":
+                # block-level trigger
+                block_name = parent.get("name", "UNKNOWN")
+                key = f"{form_name}.{block_name}.{trigger_name}"
+                sym_type = "trigger_block"
+            else:
+                # form-level trigger
+                key = f"{form_name}.{trigger_name}"
+                sym_type = "trigger_form"
+
+            # Extract body — text content of the trigger element
+            body = (elem.text or "").strip()
+            lines = body.splitlines()
+
+            symbol_index[key] = {
+                "key": key,
+                "type": sym_type,
+                "file": str(file_path),
+                "form": form_name,
+                "trigger": trigger_name,
+                "start": 0,   # line numbers inside XML not reliable — use body
+                "end": len(lines),
+                "body": body,
+                "calls": [],
+                "called_by": []
+            }
+```
+
+After parsing, run `extract_calls()` on each trigger's `body` lines — same as procedures.
+
+---
+
+### Spec 10 — SQL DDL parser (tables, columns, indexes)
+
+Parses `CREATE TABLE` statements from `.sql` files to index table symbols with their columns.
+
+```python
+import re
+
+def parse_sql_ddl(file_path, symbol_index, default_schema="PUBLIC"):
+    text = open(file_path, encoding="utf-8", errors="replace").read()
+
+    # Match CREATE TABLE [schema.]name ( ... )
+    table_pattern = re.compile(
+        r'CREATE\s+TABLE\s+(?:(\w+)\.)?(\w+)\s*\((.*?)\)\s*;',
+        re.IGNORECASE | re.DOTALL
+    )
+
+    for m in table_pattern.finditer(text):
+        schema = (m.group(1) or default_schema).upper()
+        table_name = m.group(2).upper()
+        body = m.group(3)
+        key = f"{schema}.{table_name}"
+
+        # Extract column names — first word of each non-constraint line
+        columns = []
+        for line in body.splitlines():
+            line = line.strip().rstrip(",")
+            if not line:
+                continue
+            # Skip constraints
+            if re.match(r'(CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|INDEX)', line, re.I):
+                continue
+            col = re.match(r'(\w+)\s+', line)
+            if col:
+                columns.append(col.group(1).upper())
+
+        # Find line numbers in file
+        start_line = text[:m.start()].count("\n")
+        end_line = text[:m.end()].count("\n")
+
+        symbol_index[key] = {
+            "key": key,
+            "type": "table",
+            "file": str(file_path),
+            "schema": schema,
+            "name": table_name,
+            "columns": columns,
+            "start": start_line,
+            "end": end_line,
+            "calls": [],
+            "called_by": []
+        }
+```
+
+---
+
+### Spec 11 — Spec 6 extended: missing PL/SQL DML patterns
+
+Spec 6 only detected `FROM/JOIN/INTO/UPDATE`. These common HRMS patterns were missing:
+
+```python
+def extract_calls(body_lines, all_known_packages, all_known_tables):
+    calls = set()
+
+    for line in body_lines:
+        upper = line.strip().upper()
+
+        # Procedure/function call: PACKAGE.PROC(
+        for m in re.finditer(r'\b([A-Z_]+)\.([A-Z_]+)\s*\(', upper):
+            pkg, proc = m.group(1), m.group(2)
+            if pkg in all_known_packages:
+                calls.add(f"{pkg}.{proc}")
+
+        # Table references — all DML patterns including DELETE, MERGE, cursor
+        for m in re.finditer(
+            r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|'
+            r'OPEN\s+\w+\s+FOR\s+SELECT\s+\S+\s+FROM)\s+([A-Z_][A-Z0-9_]*)',
+            upper
+        ):
+            tbl = m.group(1)
+            if tbl in all_known_tables:
+                calls.add(tbl)
+
+        # EXECUTE IMMEDIATE — flag as dynamic SQL, can't resolve statically
+        if "EXECUTE IMMEDIATE" in upper:
+            calls.add("__DYNAMIC_SQL__")
+
+    return sorted(calls)
+```
+
+`__DYNAMIC_SQL__` is a sentinel — visible in the index, tells the agent "this procedure uses dynamic SQL, its table dependencies are not fully known."
+
+---
+
+### Spec 12 — Table key normalization (fix schema inconsistency)
+
+Spec 6 adds bare `"EMPLOYEES"` to `calls[]` but SYMBOL_INDEX stores tables as `"PUBLIC.EMPLOYEES"`. Spec 7's `f"PUBLIC.{callee}"` hardcodes the schema — breaks on multi-schema repos.
+
+**Fix:** Build a reverse lookup at index time and resolve during `extract_calls`:
+
+```python
+def build_table_lookup(symbol_index):
+    """
+    Returns dict: bare_table_name → full_key
+    e.g. {"EMPLOYEES": "PUBLIC.EMPLOYEES", "DEPT": "HR.DEPT"}
+    If same table name exists in multiple schemas, keeps all — returns list.
+    """
+    lookup = {}
+    for key, entry in symbol_index.items():
+        if entry["type"] == "table":
+            name = entry["name"]
+            if name in lookup:
+                # ambiguous — store as list
+                if isinstance(lookup[name], list):
+                    lookup[name].append(key)
+                else:
+                    lookup[name] = [lookup[name], key]
+            else:
+                lookup[name] = key
+    return lookup
+
+
+def resolve_table_ref(bare_name, table_lookup):
+    """Resolve bare table name to full SYMBOL_INDEX key."""
+    result = table_lookup.get(bare_name.upper())
+    if isinstance(result, list):
+        # Ambiguous — return all, log warning
+        print(f"  [WARN] Ambiguous table ref '{bare_name}' → {result}")
+        return result
+    return [result] if result else []
+```
+
+Use `resolve_table_ref()` in `extract_calls()` instead of bare string, and in `build_called_by()` instead of `f"PUBLIC.{callee}"`.
+
+---
+
 *Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all bugs solved, all specs complete | Pipeline version: v2*
