@@ -462,9 +462,9 @@ Once SYMBOL_INDEX.json exists and is working, Step 3 is partially redundant. The
 
 v3 costs slightly more than v2 (package summaries add ~200 tokens per package) but preserves cross-procedure accuracy — a good tradeoff.
 
-### Large repo (~1000 files, future) — v3 Combined:
+### Large repo (~1000 files, future) — v4 Combined:
 
-| Phase | Before | **v3 combined** | Saving |
+| Phase | Before | **v4 combined** | Saving |
 |---|---|---|---|
 | Step 3 | ~$40–60 | ~$5–10 (or $0 if replaced by index) | ~80–100% |
 | Steps 4–12 | ~$20–30 | ~$7–12 | ~55–65% |
@@ -488,7 +488,7 @@ Some business rules only appear when you see a whole package at once. Example: e
 
 **What the summary does NOT preserve:** Internal logic patterns inside procedure bodies (e.g. "all write procs check EMPLOYMENT_STATUS"). These require body-level analysis — either a separate AI pass or a pattern miner not yet built.
 
-**Baseline measurement is still required.** You cannot claim accuracy is preserved without measuring before-and-after on the same source. Implement XML minification first, then measure baseline, then implement the symbol index, then compare again.
+**Baseline measurement is still required.** You cannot claim accuracy is preserved without measuring before-and-after on the same source. Fix Bug #1 (parser) first, then measure baseline, then implement the full symbol index, then compare again.
 
 ---
 
@@ -498,27 +498,31 @@ Some business rules only appear when you see a whole package at once. Example: e
 
 | Step | What to build | File | Realistic effort |
 |---|---|---|---|
-| 1 | XML structure minification (text-safe) | `pipeline/layer1/xml_minifier.py` | 3–4 hours + test on .pllxml |
-| 2 | PL/SQL parser (nesting depth, no regex) | `pipeline/symbol_index_builder.py` | 2–3 days |
-| 3 | Oracle Forms XML parser (collision-safe keys) | above | 1 day |
-| 4 | SQL DDL parser (tables, indexes, sequences) | above | 4–6 hours |
-| 5 | Dependency Graph Builder | `pipeline/dependency_graph_builder.py` | 3–4 hours |
-| 6 | Hierarchical Symbol Map + fallback logger | `pipeline/base_runner.py` | 4–6 hours |
-| 7 | Update 4 agent runners | `pipeline/runners/*_agent1_runner.py` | 2–3 hours |
-| 8 | Wire new steps into `run.py` | `run.py` | 1 hour |
-| 9 | Accuracy test — one package, compare output | — | 4–6 hours |
+| 1 | Version stamp + `--force-rerun` guard (Bug #8) | `run.py` | 30 min |
+| 2 | PL/SQL parser — PACKAGE BODY detection + nesting depth (Bug #1, #2, #5) | `pipeline/symbol_index_builder.py` | 2–3 hours |
+| 3 | Stable overload keys by param count (Bug #4) | `pipeline/symbol_index_builder.py` | 1 hour |
+| 4 | Test XML minifier on real `.pllxml` (Bug #3) | `pipeline/layer1/xml_minifier.py` | 1–2 hours |
+| 5 | Oracle Forms XML parser (collision-safe keys) | above | 1 day |
+| 6 | SQL DDL parser (tables, indexes, sequences) | above | 4–6 hours |
+| 7 | Dependency Graph Builder | `pipeline/dependency_graph_builder.py` | 3–4 hours |
+| 8 | Hierarchical Symbol Map + fallback logger | `pipeline/base_runner.py` | 4–6 hours |
+| 9 | Update 4 agent runners | `pipeline/runners/*_agent1_runner.py` | 2–3 hours |
+| 10 | Wire new steps into `run.py` | `run.py` | 1 hour |
+| 11 | Measure accuracy baseline — one package, compare output | — | 4–6 hours |
 | **Total** | | | **~4–6 days** |
 
 v1 said 18–26 hours. Realistic is **4–6 days** once edge cases appear in the parser.
 
-### Recommended order:
-1. **XML minification first** — isolated, 3–4 hours, zero risk if text nodes are preserved
-2. **Measure accuracy baseline** — before touching symbol parsing
-3. **PL/SQL parser** — hardest part, build with nesting depth from day one
-4. **Test one full package** — verify cross-procedure patterns still appear
-5. **Oracle Forms + SQL parsers** — add once PL/SQL parser is solid
-6. **Dependency Graph + agent runner updates** — plug in last
-7. **Revisit Step 3** — once index is working and fallback rate is <5%
+### Correct order (matches Section 12 unblocking chain):
+1. **Bug #8 — version stamp** — prevents stale output mixing old and new results
+2. **Bug #1 — parser PACKAGE BODY fix** — single most important fix, unblocks everything
+3. **Bug #2/#5 — guard + spec distinction** — fall out for free from #1, 5 minutes
+4. **Bug #4 — stable overload keys** — symbol index now reliable
+5. **Test XML minifier on one .pllxml** — verify no text node damage before using
+6. **Oracle Forms + SQL parsers** — add once PL/SQL parser is solid
+7. **Dependency Graph + agent runner updates** — plug in last
+8. **Measure baseline accuracy** — before claiming any accuracy improvement
+9. **Revisit Step 3** — once index is working and fallback rate is <5%
 
 ---
 
