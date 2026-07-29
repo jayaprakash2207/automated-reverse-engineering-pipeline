@@ -339,9 +339,12 @@ def extract_plsql_procedures(file_text):
     symbols = []
     depth = 0
     in_proc = False
-    in_body_section = False   # ← KEY: only parse after "PACKAGE BODY" line
+    in_body_section = False   # KEY: only parse after "PACKAGE BODY" line
+    collecting_params = False  # True while accumulating multi-line param list
     proc_name = None
     proc_start = None
+    param_text = ''
+    param_count = 0
 
     for i, line in enumerate(file_text.splitlines()):
         stripped = line.strip().upper()
@@ -357,19 +360,27 @@ def extract_plsql_procedures(file_text):
 
         # Detect procedure/function start — capture param count for overload key
         if re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped) and not in_proc:
-            # Try to capture parameter list on same line for param count
-            m = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)\s*\(([^)]*)', stripped)
-            if m:
-                proc_name = m.group(2)
-                params_raw = m.group(3).strip()
-                param_count = (params_raw.count(',') + 1) if params_raw else 0
-            else:
-                m2 = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped)
-                proc_name = m2.group(2)
-                param_count = 0
+            m = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped)
+            proc_name = m.group(2)
             proc_start = i
             depth = 0
             in_proc = True
+            # Accumulate parameter text — may span multiple lines until IS/AS
+            # e.g. PROCEDURE GET_EMP(\n  p_id IN NUMBER,\n  p_dept IN NUMBER\n) IS
+            param_text = stripped
+            collecting_params = True
+
+        if in_proc and collecting_params:
+            param_text += ' ' + stripped
+            # Stop collecting once IS or AS keyword is found (end of signature)
+            if re.search(r'\)\s*(IS|AS)\b', param_text):
+                collecting_params = False
+                m2 = re.search(r'\(([^)]*)\)', param_text)
+                if m2:
+                    params_raw = m2.group(1).strip()
+                    param_count = (params_raw.count(',') + 1) if params_raw else 0
+                else:
+                    param_count = 0   # no param list found — no-arg procedure
 
         if in_proc:
             # Count BEGIN keywords (increase depth)
@@ -391,6 +402,7 @@ def extract_plsql_procedures(file_text):
                             'type': 'body'
                         })
                         in_proc = False
+                        collecting_params = False
 
     return symbols
 ```
@@ -742,6 +754,15 @@ PKG.GET_EMPLOYEE(1)   ← 1 parameter
 PKG.GET_EMPLOYEE(3)   ← 3 parameters
 ```
 This is stable regardless of order in the file. If two overloads have the same parameter count (rare), append a type abbreviation from the first parameter.
+
+**Multi-line params:** Real Oracle PL/SQL commonly splits the parameter list across lines:
+```sql
+PROCEDURE GET_EMPLOYEE(
+    p_emp_id   IN NUMBER,
+    p_dept_id  IN NUMBER
+) IS
+```
+The parser in Section 4.2 handles this by accumulating lines into `param_text` until `IS` or `AS` is detected, then counting commas in the full collected text. A single-line-only regex would give `param_count = 0` for all multi-line signatures — causing overload collision.
 
 ---
 
