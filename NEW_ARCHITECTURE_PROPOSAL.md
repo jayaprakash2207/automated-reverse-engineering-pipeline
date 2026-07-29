@@ -28,8 +28,9 @@ This proposal describes a new way to run the reverse engineering phase of our pi
 | Are the token savings realistic? | Read Section 5 |
 | Is the accuracy claim honest? | Read Section 6 |
 | Is the fix order correct? | Read Section 12 unblocking chain |
-| Is ~1 day effort realistic? | Read Section 7 |
+| Is 4–6 days effort realistic? | Read Section 7 |
 | Is v4 better than the current system? | Read Section 10 summary table |
+| Are the implementation specs complete? | Read Section 13 (Specs 1–21) |
 
 **GitHub:** https://github.com/jayaprakash2207/automated-reverse-engineering-pipeline
 
@@ -44,7 +45,7 @@ python run_forward.py --input ../results --output ./forward_results
 > **Status:** Proposal v4 — Ready for team review (2026-07-28)
 > **Author:** Jayaprakash
 > **Reviewer:** Team peer review — v2 bugs incorporated, v3 bugs caught, v4 fixes claims
-> **v4 change:** Removes 3 false claims in v3; documents all 8 open code bugs; restores baseline requirement
+> **v4 change:** Removes 3 false claims in v3; documents all 8 open code bugs; restores baseline requirement; fixes 25 deep-review issues; adds 21 implementation specs (Specs 1–21)
 > **Applies to:** Reverse Engineering phase only (Steps 1–13)
 > **Forward Engineering:** No changes — already fully automated and working
 
@@ -1425,6 +1426,7 @@ def graph_expand_with_fallback(requested_symbols, symbol_index, file_cache,
         visited = set()
     result = []
     fallback_count = 0
+    processed_count = 0
 
     if len(requested_symbols) == 0:
         return []
@@ -1433,6 +1435,7 @@ def graph_expand_with_fallback(requested_symbols, symbol_index, file_cache,
         if sym in visited:
             continue   # already included — skip to prevent infinite loop
         visited.add(sym)
+        processed_count += 1
 
         if sym in symbol_index:
             result.append(get_symbol_body(sym, symbol_index))
@@ -1447,9 +1450,11 @@ def graph_expand_with_fallback(requested_symbols, symbol_index, file_cache,
             fallback_count += 1
             print(f"  [FALLBACK] Symbol not in index: {sym}")
 
-    fallback_rate = fallback_count / len(requested_symbols)
-    if fallback_rate > 0.20:
-        print(f"  WARNING HIGH FALLBACK RATE: {fallback_rate:.0%} — parser needs fixing")
+    # Guard: processed_count can be 0 if all syms were already visited
+    if processed_count > 0:
+        fallback_rate = fallback_count / processed_count
+        if fallback_rate > 0.20:
+            print(f"  WARNING HIGH FALLBACK RATE: {fallback_rate:.0%} — parser needs fixing")
     return result
 ```
 
@@ -1527,13 +1532,21 @@ Spec 8 covers `CREATE PROCEDURE` and `CREATE FUNCTION` in `.sql` files. Standalo
 # In the standalone .sql parser (Spec 8 extension):
 if re.match(r'CREATE\s+(OR\s+REPLACE\s+)?TRIGGER\s+(\w+)', stripped):
     in_body_section = True
+    current_package = None   # database-level trigger has no package
     m = re.match(r'CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(\w+)', stripped)
     trigger_db_name = m.group(1)
-    current_package = None   # database-level trigger has no package
-    # Key format: TRIGGER_NAME (no package prefix — different from form triggers)
+    # Index the trigger — key is bare TRIGGER_NAME (no package prefix)
+    key = trigger_db_name
+    symbol_index[key] = {
+        "key": key, "type": "trigger_db",
+        "file": str(file_path), "package": None,
+        "name": trigger_db_name, "start": i, "end": i,
+        "calls": [], "called_by": []
+    }
+    # Body will be filled by second pass (extract_calls on subsequent lines)
 ```
 
-**Key format for database-level triggers:** `TRIGGER_NAME` (bare, no prefix). This is distinct from Oracle Forms trigger keys which always include `FORM.BLOCK.ITEM.TRIGGER_NAME`.
+**Key format for database-level triggers:** `TRIGGER_NAME` (bare, no prefix). This is distinct from Oracle Forms trigger keys which always include `FORM.BLOCK.ITEM.TRIGGER_NAME`. Type is `trigger_db` to distinguish from `trigger_item`/`trigger_block`/`trigger_form`.
 
 ---
 
