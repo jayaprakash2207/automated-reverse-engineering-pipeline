@@ -6,7 +6,7 @@
 
 **What we are asking you to review:**
 
-This proposal describes a new way to run the reverse engineering phase of our pipeline. The current pipeline sends whole files to Claude. This proposal sends only the exact code pieces needed — saving 65–70% of token cost.
+This proposal describes a new way to run the reverse engineering phase of our pipeline. The current pipeline sends whole files to Claude. This proposal sends only the exact code pieces needed — saving 40–70% of token cost depending on repo size.
 
 **What is working today:**
 - Current pipeline runs end to end ✅
@@ -54,7 +54,7 @@ python run_forward.py --input ../results --output ./forward_results
 
 **Combine symbol-level retrieval WITH a package context summary in every Turn 2 prompt.**
 
-- Symbols give precision and 65–70% token saving
+- Symbols give precision and 40–70% token saving depending on repo size
 - Package summary preserves cross-procedure pattern visibility (the one risk v2 introduced)
 - No accuracy regression vs current — **but baseline must be measured to confirm this**
 
@@ -298,6 +298,8 @@ xml_string.replace('\n', '').replace('  ', '')
 from lxml import etree
 
 def minify_xml_structure(xml_path):
+    if not os.path.isfile(xml_path):
+        raise FileNotFoundError(f"XML file not found: {xml_path}")
     parser = etree.XMLParser(remove_comments=False, remove_blank_text=True)
     tree = etree.parse(xml_path, parser)
     # remove_blank_text=True strips pure-whitespace structural nodes only
@@ -310,7 +312,7 @@ def minify_xml_structure(xml_path):
 ```
 
 **Saving:** 20–60% on structural overhead in `.frmxml`. Less on `.pllxml` (more text content).
-**Risk after fix:** Very low — only pure-whitespace structural nodes removed. Test on one `.pllxml` before rolling out.
+**Risk after fix:** Moderate — output must be verified before pipeline use. Required: diff original vs output on at least one real `.pllxml` before enabling. Abort if any text node content changed.
 **Library:** `lxml` — one new dependency (pip install lxml). Required to preserve comments and namespaces correctly (stdlib `xml.etree` silently drops both).
 
 ---
@@ -352,10 +354,18 @@ def extract_plsql_procedures(file_text):
         if not in_body_section:
             continue   # skip everything in the spec section
 
-        # Detect procedure/function start
+        # Detect procedure/function start — capture param count for overload key
         if re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped) and not in_proc:
-            m = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped)
-            proc_name = m.group(2)
+            # Try to capture parameter list on same line for param count
+            m = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)\s*\(([^)]*)', stripped)
+            if m:
+                proc_name = m.group(2)
+                params_raw = m.group(3).strip()
+                param_count = (params_raw.count(',') + 1) if params_raw else 0
+            else:
+                m2 = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped)
+                proc_name = m2.group(2)
+                param_count = 0
             proc_start = i
             depth = 0
             in_proc = True
@@ -367,13 +377,17 @@ def extract_plsql_procedures(file_text):
             # Only count plain END; or END <proc_name>; — not END IF/LOOP/CASE
             if re.match(r'^END(\s+\w+)?\s*;', stripped):
                 if not re.match(r'^END\s+(IF|LOOP|CASE|FOR|WHILE)\b', stripped):
-                    depth -= 1
+                    if depth > 0:   # guard: inner exception handler ENDs before outer BEGIN
+                        depth -= 1
                     if depth == 0:
+                        key_name = proc_name if param_count == 0 else f'{proc_name}({param_count})'
                         symbols.append({
                             'name': proc_name,
+                            'key_name': key_name,
+                            'param_count': param_count,
                             'start': proc_start,
                             'end': i,
-                            'type': 'body'   # ← spec declarations get 'spec'
+                            'type': 'body'
                         })
                         in_proc = False
 
@@ -484,7 +498,7 @@ Once SYMBOL_INDEX.json exists and is working, Step 3 is partially redundant. The
 |---|---|
 | Small (~50 files, current HRMS) | Keep Step 3 — cost is low, SYMBOL_INDEX is new |
 | Medium (~300 files) | Run both, compare output quality |
-| Large (~1000+ files) | Skip Step 3's file-listing pass only — keep business rule extraction |
+| Large (~1000+ files) | Skip Step 3's listing pass (75–85% of Step 3 cost) — keep business rule extraction |
 
 **Important:** SYMBOL_INDEX can replace Step 3's file-listing work (which files exist, which symbols are in them). It cannot replace Step 3's business rule extraction — threshold values, narrative descriptions, and domain logic live inside procedure bodies, not in the index. "$0 cost" is only true for the listing part.
 
@@ -622,7 +636,7 @@ results/                                ← existing outputs untouched
 | Tokens per agent call | ~18,000 | ~3,500 | **~5,000–6,000** |
 | Structural cross-procedure visibility | ✅ Visible | ❌ Hidden | **✅ Preserved via summary** |
 | Logic pattern visibility (body-level) | ✅ Visible | ❌ Hidden | **⚠ Not preserved — baseline required** |
-| Accuracy | ~85–90% (unmeasured) | Unknown risk | **Measure before and after to confirm** |
+| Accuracy | Unknown (unmeasured baseline) | Unknown risk | **Measure before and after to confirm** |
 | Reverse eng cost (small repo) | ~$7–11 | ~$3–6 | **~$4–7** |
 | Reverse eng cost (large repo) | ~$60–90 | ~$10–20 | **~$12–22** |
 | Baseline measurement needed? | — | Yes | **Yes — summary does not replace it** |
@@ -1051,16 +1065,23 @@ def extract_calls(body_lines, all_known_packages, table_lookup):
             if pkg in all_known_packages:
                 calls.add(f"{pkg}.{proc}")
 
-        # Pattern 2 — all DML table references
+        # Pattern 2 — standard DML table references
         for m in re.finditer(
-            r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|'
-            r'OPEN\s+\w+\s+FOR\s+SELECT\s+\S+\s+FROM)\s+([A-Z_][A-Z0-9_]*)',
+            r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO)\s+([A-Z_][A-Z0-9_]*)',
             upper
         ):
             tbl = m.group(1)
-            # Resolve bare name to full key using Spec 12 lookup
-            resolved = resolve_table_ref(tbl, table_lookup)
-            calls.update(resolved)
+            calls.update(resolve_table_ref(tbl, table_lookup))
+
+        # Pattern 2b — cursor: OPEN cur FOR SELECT ... FROM table_name
+        # Separate pattern so table name is always group(1) — the merged regex
+        # with OPEN...FROM as an alternative had no capture group for the table.
+        for m in re.finditer(
+            r'OPEN\s+\w+\s+FOR\s+SELECT\s+.*?FROM\s+([A-Z_][A-Z0-9_]*)',
+            upper
+        ):
+            tbl = m.group(1)
+            calls.update(resolve_table_ref(tbl, table_lookup))
 
         # Pattern 3 — dynamic SQL sentinel
         if "EXECUTE IMMEDIATE" in upper:
@@ -1187,26 +1208,28 @@ def parse_frmxml(file_path, symbol_index):
 
         if t == "Trigger":
             trigger_name = elem.get("name", "UNKNOWN")
-            # Walk up to determine scope
-            parent = elem.getparent()
-            grandparent = parent.getparent() if parent is not None else None
+            # Walk ancestor chain to find containing Block and Item.
+            # Cannot assume direct parent — Oracle Forms XML may wrap triggers in
+            # a <Triggers> container: <Item><Triggers><Trigger> is valid.
+            ancestors = []
+            p = elem.getparent()
+            while p is not None and tag(p) != "Form":
+                ancestors.append(p)
+                p = p.getparent()
 
-            p_tag = tag(parent) if parent is not None else ""
-            gp_tag = tag(grandparent) if grandparent is not None else ""
+            item_el  = next((e for e in ancestors if tag(e) == "Item"),  None)
+            block_el = next((e for e in ancestors if tag(e) == "Block"), None)
 
-            if p_tag == "Item" and gp_tag == "Block":
-                # item-level trigger
-                block_name = grandparent.get("name", "UNKNOWN")
-                item_name = parent.get("name", "UNKNOWN")
+            if item_el is not None and block_el is not None:
+                block_name = block_el.get("name", "UNKNOWN")
+                item_name  = item_el.get("name", "UNKNOWN")
                 key = f"{form_name}.{block_name}.{item_name}.{trigger_name}"
                 sym_type = "trigger_item"
-            elif p_tag == "Block":
-                # block-level trigger
-                block_name = parent.get("name", "UNKNOWN")
+            elif block_el is not None:
+                block_name = block_el.get("name", "UNKNOWN")
                 key = f"{form_name}.{block_name}.{trigger_name}"
                 sym_type = "trigger_block"
             else:
-                # form-level trigger
                 key = f"{form_name}.{trigger_name}"
                 sym_type = "trigger_form"
 
@@ -1240,18 +1263,32 @@ Parses `CREATE TABLE` statements from `.sql` files to index table symbols with t
 import re
 
 def parse_sql_ddl(file_path, symbol_index, default_schema="PUBLIC"):
-    text = open(file_path, encoding="utf-8", errors="replace").read()
+    with open(file_path, encoding="utf-8", errors="replace") as f:
+        text = f.read()
 
-    # Match CREATE TABLE [schema.]name ( ... )
-    table_pattern = re.compile(
-        r'CREATE\s+TABLE\s+(?:(\w+)\.)?(\w+)\s*\((.*?)\)\s*;',
-        re.IGNORECASE | re.DOTALL
+    # Match CREATE TABLE [schema.]name ( ...
+    # Cannot use (.*?)\) — it stops at the first ) inside column types like NUMBER(10,2).
+    # Use a paren-depth counter instead.
+    table_start_re = re.compile(
+        r'CREATE\s+TABLE\s+(?:(\w+)\.)?(\w+)\s*\(',
+        re.IGNORECASE
     )
+
+    def _extract_table_body(src, pos):
+        depth = 1
+        i = pos
+        while i < len(src) and depth > 0:
+            if src[i] == '(': depth += 1
+            elif src[i] == ')': depth -= 1
+            i += 1
+        return src[pos:i - 1], i
+
+    table_pattern = table_start_re
 
     for m in table_pattern.finditer(text):
         schema = (m.group(1) or default_schema).upper()
         table_name = m.group(2).upper()
-        body = m.group(3)
+        body, _ = _extract_table_body(text, m.end())
         key = f"{schema}.{table_name}"
 
         # Extract column names — first word of each non-constraint line
@@ -1334,8 +1371,11 @@ def resolve_table_ref(bare_name, table_lookup):
     """Resolve bare table name to full SYMBOL_INDEX key."""
     result = table_lookup.get(bare_name.upper())
     if isinstance(result, list):
-        # Ambiguous — return all, log warning
-        print(f"  [WARN] Ambiguous table ref '{bare_name}' → {result}")
+        # Ambiguous — same bare name in multiple schemas.
+        # Return ALL candidates (safe over-inclusion).
+        # Downstream behaviour: graph_expand_with_fallback includes all candidates;
+        # Claude receives all matching table definitions and can disambiguate from context.
+        print(f"  [WARN] Ambiguous table '{bare_name}' found in {len(result)} schemas: {result}")
         return result
     return [result] if result else []
 ```
@@ -1344,4 +1384,197 @@ Both uses are already applied: Spec 6 calls `resolve_table_ref()` for all table 
 
 ---
 
-*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all bugs solved, all specs complete | Pipeline version: v2*
+### Spec 13 — `.pks` spec-only file parsing
+
+A `.pks` file contains only procedure/function declarations — no body. These must be indexed as `.spec` entries. There may be no matching `.pkb` (the body may be in an unreachable file or the package is forward-declared only).
+
+**Parsing rule:**
+```python
+# In file loop: detect .pks files
+if file_path.suffix.lower() == '.pks':
+    for i, line in enumerate(file_text.splitlines()):
+        stripped = line.strip().upper()
+        if re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped):
+            m = re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped)
+            proc_name = m.group(2)
+            # Key format: PACKAGE_NAME.PROC_NAME.spec
+            pkg_name = file_path.stem.upper()
+            key = f"{pkg_name}.{proc_name}.spec"
+            symbol_index[key] = {
+                "key": key, "type": "spec",
+                "file": str(file_path), "package": pkg_name,
+                "name": proc_name, "start": i, "end": i,
+                "calls": [], "called_by": []
+            }
+```
+
+**If no matching `.pkb` exists:** Keep the `.spec` entries in the index. Log a warning: `[WARN] No .pkb found for PKG_NAME — spec-only package`. The agent will see declaration signatures but no bodies — this is correct and expected for forward-declared packages.
+
+---
+
+### Spec 14 — Circular dependency handling in graph expansion
+
+`graph_expand_with_fallback` must not loop infinitely when the call graph has a cycle (e.g., `PKG_A` calls `PKG_B` which calls `PKG_A`). Add a `visited` set:
+
+```python
+def graph_expand_with_fallback(requested_symbols, symbol_index, file_cache,
+                                visited=None):
+    if visited is None:
+        visited = set()
+    result = []
+    fallback_count = 0
+
+    if len(requested_symbols) == 0:
+        return []
+
+    for sym in requested_symbols:
+        if sym in visited:
+            continue   # already included — skip to prevent infinite loop
+        visited.add(sym)
+
+        if sym in symbol_index:
+            result.append(get_symbol_body(sym, symbol_index))
+            deps = get_1hop_deps(sym, symbol_index)
+            # Only expand deps not already visited
+            new_deps = [d for d in deps if d not in visited]
+            result.extend(graph_expand_with_fallback(
+                new_deps, symbol_index, file_cache, visited
+            ))
+        else:
+            result.append(get_whole_file(sym, file_cache))
+            fallback_count += 1
+            print(f"  [FALLBACK] Symbol not in index: {sym}")
+
+    fallback_rate = fallback_count / len(requested_symbols)
+    if fallback_rate > 0.20:
+        print(f"  WARNING HIGH FALLBACK RATE: {fallback_rate:.0%} — parser needs fixing")
+    return result
+```
+
+---
+
+### Spec 15 — Symbols with no dependencies in DEPENDENCY_GRAPH.json
+
+Symbols that have no outgoing calls (leaf nodes) must still appear in the graph with an empty list — not be omitted. Omission would make it impossible to distinguish "not parsed yet" from "no dependencies".
+
+**Rule:** Every symbol that exists in SYMBOL_INDEX.json must have a `call_graph` entry. If it calls nothing, the value is `[]`.
+
+```python
+# When building call_graph in dependency_graph_builder.py:
+for key in symbol_index:
+    call_graph[key] = symbol_index[key].get("calls", [])
+# This guarantees every symbol appears — even leaves.
+```
+
+---
+
+### Spec 16 — Turn 2 integration: loading SYMBOL_INDEX at runtime
+
+At agent runner startup, `SYMBOL_INDEX.json` must be loaded once and passed to `graph_expand_with_fallback`. It must not be re-read on every symbol lookup.
+
+```python
+# In base_runner.py or each agent runner — load once at top of run():
+import json
+from pathlib import Path
+
+def load_symbol_index(output_dir):
+    path = Path(output_dir) / "SYMBOL_INDEX.json"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"SYMBOL_INDEX.json not found at {path}. "
+            "Run Step 2b (build_symbol_index) first."
+        )
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+# Usage in agent runner:
+symbol_index = load_symbol_index(output_dir)   # load once
+file_cache   = load_file_cache(output_dir)     # load once
+# ... later, per Turn 2 call:
+bodies = graph_expand_with_fallback(requested_keys, symbol_index, file_cache)
+```
+
+If `SYMBOL_INDEX.json` does not exist, the runner fails fast with a clear message — it does not silently fall back to whole-file mode.
+
+---
+
+### Spec 17 — Intra-package unqualified call limitation
+
+Inside a package body, a procedure can call another procedure in the same package without a package prefix:
+```sql
+-- Inside PKG_EMPLOYEE body:
+PROCEDURE HIRE_EMPLOYEE IS
+BEGIN
+    VALIDATE_DEPT(p_dept_id);   -- unqualified — means PKG_EMPLOYEE.VALIDATE_DEPT
+```
+
+The Spec 6 `extract_calls()` Pattern 1 only detects `PACKAGE.PROC(` — it will miss `VALIDATE_DEPT(`. These intra-package calls will not appear in `calls[]`.
+
+**Known limitation — document, do not silently ignore:**
+- The `calls[]` list will be incomplete for intra-package calls.
+- The package context summary (Spec 3) still lists all procedure names — so the agent knows the procedure exists even if the call link is missing.
+- Fix (future): when extracting calls from a procedure in `PKG_X`, also match bare `PROC_NAME(` patterns against the set of known procedure names in `PKG_X`.
+
+---
+
+### Spec 18 — `CREATE TRIGGER` in .sql files
+
+Spec 8 covers `CREATE PROCEDURE` and `CREATE FUNCTION` in `.sql` files. Standalone `CREATE TRIGGER` statements in `.sql` files (database-level triggers, not Oracle Forms triggers) must also be indexed.
+
+```python
+# In the standalone .sql parser (Spec 8 extension):
+if re.match(r'CREATE\s+(OR\s+REPLACE\s+)?TRIGGER\s+(\w+)', stripped):
+    in_body_section = True
+    m = re.match(r'CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(\w+)', stripped)
+    trigger_db_name = m.group(1)
+    current_package = None   # database-level trigger has no package
+    # Key format: TRIGGER_NAME (no package prefix — different from form triggers)
+```
+
+**Key format for database-level triggers:** `TRIGGER_NAME` (bare, no prefix). This is distinct from Oracle Forms trigger keys which always include `FORM.BLOCK.ITEM.TRIGGER_NAME`.
+
+---
+
+### Spec 19 — Multi-file package body detection
+
+A package body may be split across multiple `.pkb` files (e.g., from a poorly structured migration). If two files both declare `PACKAGE BODY PKG_EMPLOYEE`, the second one silently overwrites the first in `symbol_index`.
+
+**Rule:** When a second `PACKAGE BODY <name>` is found for a name already in the index, log a warning and keep both sets of procedures by appending a file suffix to the package name:
+
+```python
+if pkg_name in seen_package_bodies:
+    print(f"  [WARN] Duplicate PACKAGE BODY '{pkg_name}' in {file_path} — "
+          f"using '{pkg_name}__2' to avoid overwrite")
+    pkg_name = f"{pkg_name}__2"
+else:
+    seen_package_bodies.add(pkg_name)
+```
+
+---
+
+### Spec 20 — PRAGMA directives are intentionally ignored
+
+Oracle PL/SQL `PRAGMA` statements (e.g., `PRAGMA AUTONOMOUS_TRANSACTION`, `PRAGMA EXCEPTION_INIT`) appear in procedure and package bodies. They are not procedure names, table references, or call targets.
+
+**Rule:** Lines matching `PRAGMA\s+\w+` are skipped by all parsers. No entry is created in SYMBOL_INDEX for pragmas. This is intentional — they carry no structural information relevant to the call graph or dependency analysis.
+
+---
+
+### Spec 21 — Anonymous PL/SQL blocks are intentionally ignored
+
+Anonymous PL/SQL blocks (`BEGIN ... END;` without a preceding `PROCEDURE`/`FUNCTION`/`PACKAGE BODY` keyword) appear in migration scripts and seed files. The parser will not assign them a name or index them.
+
+**Rule:** If a `BEGIN` is encountered in `in_body_section = False` state and no `in_proc = True` is set, it is an anonymous block. Skip it. Log at debug level if needed:
+
+```python
+# Anonymous block — skip (no procedure/function header above this BEGIN)
+if not in_body_section and stripped == 'BEGIN':
+    print(f"  [DEBUG] Anonymous PL/SQL block at line {i} in {file_path} — skipped")
+    continue
+```
+
+This is intentional. Anonymous blocks contain executable logic but have no stable name to key them by. They are not reachable by the agent's symbol map.
+
+---
+
+*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all 25 issues fixed, all specs complete | Pipeline version: v2*
