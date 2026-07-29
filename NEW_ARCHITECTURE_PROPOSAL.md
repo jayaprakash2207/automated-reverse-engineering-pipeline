@@ -289,17 +289,28 @@ Zero out of five would have matched `END name;`. Parser finds no boundaries.
 
 **Worse bug:** `END IF;` at line 82 is *inside* `VALIDATE_STOCK_AND_CALCULATE`. A naive "look for END" stops there and chops the procedure body in half. No error — just wrong analysis output sent to Claude.
 
-**Correct approach — track BEGIN/END nesting depth:**
+**Correct approach — track BEGIN/END nesting depth, detect PACKAGE BODY boundary:**
+
 ```python
 def extract_plsql_procedures(file_text):
     symbols = []
     depth = 0
     in_proc = False
+    in_body_section = False   # ← KEY: only parse after "PACKAGE BODY" line
     proc_name = None
     proc_start = None
 
     for i, line in enumerate(file_text.splitlines()):
         stripped = line.strip().upper()
+
+        # Only start parsing procedures after the PACKAGE BODY line
+        # Lines before this are the spec (declarations only — no bodies)
+        if re.match(r'PACKAGE\s+BODY\s+\w+', stripped):
+            in_body_section = True
+            continue
+
+        if not in_body_section:
+            continue   # skip everything in the spec section
 
         # Detect procedure/function start
         if re.match(r'(PROCEDURE|FUNCTION)\s+(\w+)', stripped) and not in_proc:
@@ -321,7 +332,8 @@ def extract_plsql_procedures(file_text):
                         symbols.append({
                             'name': proc_name,
                             'start': proc_start,
-                            'end': i
+                            'end': i,
+                            'type': 'body'   # ← spec declarations get 'spec'
                         })
                         in_proc = False
 
@@ -329,6 +341,7 @@ def extract_plsql_procedures(file_text):
 ```
 
 This correctly handles `END IF;`, `END LOOP;`, `END CASE;` — skips them.
+The `in_body_section` flag is what fixes Bug #1 — without it the spec latches `in_proc=True` forever and every real body is skipped.
 
 ---
 
@@ -607,7 +620,7 @@ results/                                ← existing outputs untouched
 
 ## 12. Open Code Bugs — Solutions Documented
 
-**The parser currently finds 0 of 6 procedures in the sample file.** Fix in the order below — each one unblocks the next.
+**8 bugs total. Fix in the order below — each one unblocks the next. Parser currently finds 0 of 6 procedures.**
 
 ---
 
@@ -688,20 +701,36 @@ This is stable regardless of order in the file. If two overloads have the same p
 
 ---
 
+### Bug #8 — Stale checkpoints silently mix old and new output
+
+**Root cause:** The pipeline resumes by checking if output files exist. If you implement the new architecture and re-run, the old `results/` files (generated with whole-file approach) are still on disk. The pipeline sees them, skips those steps, and mixes old whole-file output with new symbol-index output in the same run. You can't tell which docs came from which approach.
+
+**Fix:** Add an architecture version stamp to `results/` on each run:
+```
+results/
+  _arch_version.txt    ← contains "v4-symbol-index" or "v1-whole-file"
+```
+On startup, if `_arch_version.txt` exists and does not match the current architecture version, print a warning and require `--force-rerun` to continue. Never silently reuse old output from a different architecture.
+
+This also applies to `SYMBOL_INDEX.json` and `DEPENDENCY_GRAPH.json` — if the source files have changed since they were built, they must be rebuilt, not reused.
+
+---
+
 ### Fix Order and Unblocking Chain
 
 ```
-Fix #1 (PACKAGE BODY detection)
-    → Parser finds real procedures
-        → Fix #5 (spec/body distinction) falls out for free
-            → Symbol index has real data
-                → Fix #4 (stable overload keys)
-                    → Fix #2 (guard empty list)
-                        → Graph expansion works
-                            → Test Fix #3 (XML minifier on real .pllxml)
-                                → Wire into run.py
-                                    → Measure baseline accuracy
-                                        → End to end working
+Fix #8 (version stamp) — do this first, prevents mixing old+new output
+    → Fix #1 (PACKAGE BODY detection)
+        → Parser finds real procedures
+            → Fix #5 (spec/body distinction) falls out for free
+                → Symbol index has real data
+                    → Fix #4 (stable overload keys)
+                        → Fix #2 (guard empty list)
+                            → Graph expansion works
+                                → Test Fix #3 (XML minifier on real .pllxml)
+                                    → Wire into run.py
+                                        → Measure baseline accuracy
+                                            → End to end working ✅
 ```
 
 **Total estimated effort once bugs are fixed:** 1 day.
