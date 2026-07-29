@@ -3,7 +3,7 @@
 > **Status:** Proposal v4 — Combined approach, honest claims, open bugs documented (2026-07-28)
 > **Author:** Jayaprakash
 > **Reviewer:** Team peer review — v2 bugs incorporated, v3 bugs caught, v4 fixes claims
-> **v4 change:** Removes 3 false claims in v3; documents all 7 open code bugs; restores baseline requirement
+> **v4 change:** Removes 3 false claims in v3; documents all 8 open code bugs; restores baseline requirement
 > **Applies to:** Reverse Engineering phase only (Steps 1–13)
 > **Forward Engineering:** No changes — already fully automated and working
 
@@ -17,7 +17,7 @@
 - Package summary preserves cross-procedure pattern visibility (the one risk v2 introduced)
 - No accuracy regression vs current — **but baseline must be measured to confirm this**
 
-**Current status:** The code sections in this proposal (4.1–4.3, 4.5) describe the correct design. The implementation is **not yet complete** — all 7 code bugs listed in Section 12 are still open. The parser currently finds 0 of 6 procedures in the sample file. Do not treat this as "ready to run" until Section 12 bugs are resolved.
+**Current status:** The code sections in this proposal (4.1–4.3, 4.5) describe the correct design. The implementation is **not yet complete** — all 8 code bugs listed in Section 12 are still open. The parser currently finds 0 of 6 procedures in the sample file. Do not treat this as "ready to run" until Section 12 bugs are resolved.
 
 ---
 
@@ -28,7 +28,7 @@
 | v1 | Whole files sent (current) | 80% of tokens irrelevant, expensive |
 | v2 | Symbols only | Cheaper but cross-procedure patterns hidden |
 | v3 | Symbols + package context summary | Good idea, but 7 v2 bugs unfixed + 2 new false claims |
-| **v4 (this)** | **Same as v3, honest claims** | **7 open bugs documented; package summary scope corrected; baseline required** |
+| **v4 (this)** | **Same as v3, honest claims** | **8 open bugs documented; package summary scope corrected; baseline required** |
 
 ---
 
@@ -97,16 +97,17 @@ The summary gives the agent context about what a package contains and how proced
 
 ---
 
-## Before / v2 / v3 (Combined) Comparison
+## Before / v2 / v4 (Combined) Comparison
 
-| | Current (whole file) | v2 (symbols only) | **v3 Combined (best)** |
+| | Current (whole file) | v2 (symbols only) | **v4 Combined (recommended)** |
 |---|---|---|---|
 | Tokens per Turn 2 call | ~18,000 | ~3,500 | **~5,000–6,000** |
 | Relevant content % | ~20% | ~100% | **~95%** |
-| Cross-procedure patterns | ✅ Visible | ❌ Risk | **✅ Preserved via summary** |
-| Accuracy vs current | Baseline | Unknown risk | **~Same as current** |
+| Structural cross-procedure visibility | ✅ Visible | ❌ Hidden | **✅ Preserved via summary** |
+| Logic pattern visibility | ✅ Visible | ❌ Hidden | **⚠ Baseline required to confirm** |
+| Accuracy vs current | Baseline (unmeasured) | Unknown risk | **Measure before and after** |
 | Token saving vs current | — | ~80% | **~65–70%** |
-| Safe to implement? | — | Needs baseline test | **Yes — summary covers the risk** |
+| Safe to implement? | — | Needs baseline test | **After 8 bugs fixed + baseline measured** |
 
 ---
 
@@ -126,7 +127,7 @@ A teammate reviewed v1 of this proposal against the actual sample files and foun
 5. Savings were calculated on Step 3's small cost — but Step 3 grows with repo size and becomes the dominant cost on large apps. The proposal saved the wrong step.
 6. Symbol Map at scale (10,000-file app) becomes bigger than the whole-file approach it replaces — needs hierarchical grouping, not a flat list.
 
-All 6 are addressed below.
+All 6 are addressed in the design below. 2 additional bugs were found in v3 and added as Bug #7 and #8 — all 8 are documented in Section 12.
 
 ---
 
@@ -213,9 +214,9 @@ Steps 4–12 — Analysis Agents (BA, DA, TA, AA)
         │    Add 1-hop direct dependencies
         │    Fallback: if symbol not in index → send whole file, LOG it
         │
-        │  TURN 2: Agent receives (v3 combined):
-        │          1. Package context summaries (~200 tokens/package)
-        │             — procedure names, shared patterns, shared tables
+        │  TURN 2: Agent receives (v4 combined):
+        │          1. Package context summaries (~150–200 tokens/package, capped)
+        │             — procedure names (cap 20), shared tables, common calls
         │          2. Requested symbol bodies (~45 lines each)
         │          3. 1-hop dependency bodies (auto-added)
         │          TOTAL: ~5,000–6,000 tokens (vs ~18,000 before)
@@ -358,7 +359,7 @@ The `in_body_section` flag is what fixes Bug #1 — without it the spec latches 
 | Symbol type | Key format | Example |
 |---|---|---|
 | PL/SQL procedure | `PACKAGE.PROC_NAME` | `PKG_EMPLOYEE.CALCULATE_SALARY` |
-| PL/SQL overload | `PACKAGE.PROC_NAME#2` | `PKG_EMPLOYEE.GET_EMPLOYEE#2` |
+| PL/SQL overload | `PACKAGE.PROC_NAME(param_count)` | `PKG_EMPLOYEE.GET_EMPLOYEE(3)` |
 | Form trigger on item | `FORM.BLOCK.ITEM.TRIGGER` | `HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED` |
 | Form trigger on block | `FORM.BLOCK.TRIGGER` | `HRMS_EMPLOYEE.EMPLOYEES.POST_QUERY` |
 | Form trigger on form | `FORM.TRIGGER` | `HRMS_EMPLOYEE.ON_ERROR` |
@@ -407,6 +408,11 @@ Agent requests by key: `PKG_EMPLOYEE.calculate_salary`, `HRMS_EMPLOYEE.EMPLOYEES
 def graph_expand_with_fallback(requested_symbols, symbol_index, file_cache):
     result = []
     fallback_count = 0
+
+    # Bug #2 fix: guard against empty list before dividing
+    if len(requested_symbols) == 0:
+        return []
+
     for sym in requested_symbols:
         if sym in symbol_index:
             result.append(get_symbol_body(sym, symbol_index))
@@ -451,16 +457,16 @@ Once SYMBOL_INDEX.json exists and is working, Step 3 is partially redundant. The
 
 **Corrected from v1** — v1 was too optimistic on Steps 4–12 and understated Step 3's importance at scale.
 
-### Small repo (current HRMS, ~50 files) — v3 Combined:
+### Small repo (current HRMS, ~50 files) — v4 Combined:
 
-| Phase | Before | v2 symbols-only | **v3 combined** | Saving |
+| Phase | Before | v2 symbols-only | **v4 combined** | Saving |
 |---|---|---|---|---|
 | Step 3 (XML minified) | ~$2–3 | ~$1.5–2 | ~$1.5–2 | ~25% |
 | Steps 4–12 (symbol + summary) | ~$4–6 | ~$1–2 | ~$1.5–2.5 | ~55–65% |
 | Step 13 (synthesis) | ~$1–2 | ~$1–2 | ~$1–2 | None |
 | **Total reverse engineering** | **~$7–11** | **~$3–6** | **~$4–7** | **~40–50%** |
 
-v3 costs slightly more than v2 (package summaries add ~200 tokens per package) but preserves cross-procedure accuracy — a good tradeoff.
+v4 costs slightly more than v2 (package summaries add ~150–200 tokens per package) but preserves cross-procedure structural visibility — a good tradeoff.
 
 ### Large repo (~1000 files, future) — v4 Combined:
 
@@ -581,7 +587,7 @@ results/                                ← existing outputs untouched
 | Reverse eng cost (small repo) | ~$7–11 | ~$3–6 | **~$4–7** |
 | Reverse eng cost (large repo) | ~$60–90 | ~$10–20 | **~$12–22** |
 | Baseline measurement needed? | — | Yes | **Yes — summary does not replace it** |
-| Code bugs blocking implementation | — | 7 open | **7 open (Section 12)** |
+| Code bugs blocking implementation | — | 8 open | **8 open (Section 12)** |
 | New dependencies | — | None | **None (stdlib only)** |
 | Implementation effort | — | — | **4–6 days (after bugs fixed)** |
 | Forward engineering affected | — | Not at all | **Not at all** |
@@ -618,7 +624,7 @@ results/                                ← existing outputs untouched
 | "Shared pattern: all write procs check X" in summary | Removed — index holds names/links only, not body logic |
 | "Baseline measurement no longer required" (Section 6, 10) | Restored — baseline required, summary does not replace it |
 | "~200 tokens per package" fixed | Capped at 20 names + "+N more" to keep it bounded |
-| 7 code bugs described as fixed | All 7 explicitly listed as open in Section 12 |
+| 7 code bugs described as fixed | All 7 listed as open + Bug #8 (stale checkpoints) added = 8 total in Section 12 |
 
 ---
 
