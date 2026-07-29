@@ -1,6 +1,47 @@
 # New Architecture Proposal — Token Reduction for Reverse Engineering Pipeline
 
-> **Status:** Proposal v4 — Combined approach, honest claims, open bugs documented (2026-07-28)
+---
+
+## FOR TEAMMATES — READ THIS FIRST
+
+**What we are asking you to review:**
+
+This proposal describes a new way to run the reverse engineering phase of our pipeline. The current pipeline sends whole files to Claude. This proposal sends only the exact code pieces needed — saving 65–70% of token cost.
+
+**What is working today:**
+- Current pipeline runs end to end ✅
+- Forward engineering (Java + React app generation) is fully automated ✅
+- Reverse engineering works but has one silent bug — PL/SQL package bodies are not being read due to wrong file extensions (already fixed by teammate, Bug #7)
+
+**What v4 is:**
+- A design plan — correct and fully documented
+- NOT yet built — 8 bugs need to be coded before it runs
+- Estimated ~1 day of coding to make it fully working
+
+**What we need from you:**
+
+| Question | Please check |
+|---|---|
+| Is the design correct? | Read Sections 2, 3, 4 |
+| Is the parser fix right? | Read Section 4.2 and Bug #1 in Section 12 |
+| Is the XML minifier approach safe? | Read Section 4.1 and Bug #3 in Section 12 |
+| Are the token savings realistic? | Read Section 5 |
+| Is the accuracy claim honest? | Read Section 6 |
+| Is the fix order correct? | Read Section 12 unblocking chain |
+| Is ~1 day effort realistic? | Read Section 7 |
+| Is v4 better than the current system? | Read Section 10 summary table |
+
+**GitHub:** https://github.com/jayaprakash2207/automated-reverse-engineering-pipeline
+
+**To run the current pipeline today (no v4 needed):**
+```
+cd forward-engineering-only
+python run_forward.py --input ../results --output ./forward_results
+```
+
+---
+
+> **Status:** Proposal v4 — Ready for team review (2026-07-28)
 > **Author:** Jayaprakash
 > **Reviewer:** Team peer review — v2 bugs incorporated, v3 bugs caught, v4 fixes claims
 > **v4 change:** Removes 3 false claims in v3; documents all 8 open code bugs; restores baseline requirement
