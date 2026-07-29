@@ -1106,9 +1106,14 @@ def build_called_by(symbol_index):
 
 Call order in `build_symbol_index()`:
 ```python
-symbol_index = first_pass_extract_symbols(source_dir)      # names, lines
-symbol_index = second_pass_extract_calls(symbol_index)     # calls[]
-symbol_index = build_called_by(symbol_index)               # called_by[]
+symbol_index = first_pass_extract_symbols(source_dir)           # names, lines
+table_lookup  = build_table_lookup(symbol_index)                # Spec 12
+all_packages  = {v["package"] for v in symbol_index.values()
+                 if v.get("package")}
+symbol_index = second_pass_extract_calls(                       # calls[]
+    symbol_index, all_packages, table_lookup
+)
+symbol_index = build_called_by(symbol_index)                    # called_by[]
 save_json(symbol_index, output_path)
 ```
 
@@ -1282,41 +1287,18 @@ def parse_sql_ddl(file_path, symbol_index, default_schema="PUBLIC"):
 
 ---
 
-### Spec 11 — Spec 6 extended: missing PL/SQL DML patterns
+### Spec 11 — DML patterns reference (superseded by Spec 6)
 
-Spec 6 only detected `FROM/JOIN/INTO/UPDATE`. These common HRMS patterns were missing:
+All DML patterns (`DELETE FROM`, `MERGE INTO`, cursor `SELECT`, `EXECUTE IMMEDIATE`) are already included in Spec 6's `extract_calls()`. Spec 11 is kept as a reference note only — do not implement a second version.
 
-```python
-def extract_calls(body_lines, all_known_packages, all_known_tables):
-    calls = set()
+**Patterns covered in Spec 6:**
+- `FROM`, `JOIN`, `INTO`, `UPDATE` — standard DML
+- `DELETE FROM` — delete statements
+- `MERGE INTO` — upsert statements
+- `OPEN cursor FOR SELECT ... FROM` — cursor declarations
+- `EXECUTE IMMEDIATE` → `__DYNAMIC_SQL__` sentinel
 
-    for line in body_lines:
-        upper = line.strip().upper()
-
-        # Procedure/function call: PACKAGE.PROC(
-        for m in re.finditer(r'\b([A-Z_]+)\.([A-Z_]+)\s*\(', upper):
-            pkg, proc = m.group(1), m.group(2)
-            if pkg in all_known_packages:
-                calls.add(f"{pkg}.{proc}")
-
-        # Table references — all DML patterns including DELETE, MERGE, cursor
-        for m in re.finditer(
-            r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|'
-            r'OPEN\s+\w+\s+FOR\s+SELECT\s+\S+\s+FROM)\s+([A-Z_][A-Z0-9_]*)',
-            upper
-        ):
-            tbl = m.group(1)
-            if tbl in all_known_tables:
-                calls.add(tbl)
-
-        # EXECUTE IMMEDIATE — flag as dynamic SQL, can't resolve statically
-        if "EXECUTE IMMEDIATE" in upper:
-            calls.add("__DYNAMIC_SQL__")
-
-    return sorted(calls)
-```
-
-`__DYNAMIC_SQL__` is a sentinel — visible in the index, tells the agent "this procedure uses dynamic SQL, its table dependencies are not fully known."
+All resolved to full symbol keys via `resolve_table_ref()` from Spec 12.
 
 ---
 
@@ -1358,7 +1340,7 @@ def resolve_table_ref(bare_name, table_lookup):
     return [result] if result else []
 ```
 
-Use `resolve_table_ref()` in `extract_calls()` instead of bare string, and in `build_called_by()` instead of `f"PUBLIC.{callee}"`.
+Both uses are already applied: Spec 6 calls `resolve_table_ref()` for all table refs, Spec 7 skips the `PUBLIC.` fallback entirely since all refs are pre-resolved.
 
 ---
 
