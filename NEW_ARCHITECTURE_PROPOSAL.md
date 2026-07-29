@@ -786,4 +786,230 @@ Fix #8 (version stamp) — do this first, prevents mixing old+new output
 
 ---
 
-*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all bugs solved and documented | Pipeline version: v2*
+---
+
+## 13. Implementation Specs — Build-Ready Details
+
+These 5 specs are what a developer needs before writing a single line of code. Without them, the builder would have to guess. All are derived directly from the design in Sections 3 and 4.
+
+---
+
+### Spec 1 — SYMBOL_INDEX.json exact schema
+
+Every entry in the index is one symbol. The file is a JSON object keyed by symbol key:
+
+```json
+{
+  "PKG_EMPLOYEE.HIRE_EMPLOYEE": {
+    "key":      "PKG_EMPLOYEE.HIRE_EMPLOYEE",
+    "type":     "procedure",
+    "file":     "source/ts-plsql-oracle-forms-hrms/PKG_EMPLOYEE.pkb",
+    "package":  "PKG_EMPLOYEE",
+    "name":     "HIRE_EMPLOYEE",
+    "start":    142,
+    "end":      198,
+    "calls":    ["PKG_EMPLOYEE.VALIDATE_DEPT", "PKG_EMPLOYEE.LOG_HISTORY", "EMPLOYEES"],
+    "called_by": ["HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED"]
+  },
+  "PKG_EMPLOYEE.HIRE_EMPLOYEE.spec": {
+    "key":      "PKG_EMPLOYEE.HIRE_EMPLOYEE.spec",
+    "type":     "spec",
+    "file":     "source/ts-plsql-oracle-forms-hrms/PKG_EMPLOYEE.pks",
+    "package":  "PKG_EMPLOYEE",
+    "name":     "HIRE_EMPLOYEE",
+    "start":    12,
+    "end":      14,
+    "calls":    [],
+    "called_by": []
+  },
+  "PKG_EMPLOYEE.GET_EMPLOYEE(1)": {
+    "key":      "PKG_EMPLOYEE.GET_EMPLOYEE(1)",
+    "type":     "procedure",
+    "file":     "source/ts-plsql-oracle-forms-hrms/PKG_EMPLOYEE.pkb",
+    "package":  "PKG_EMPLOYEE",
+    "name":     "GET_EMPLOYEE",
+    "param_count": 1,
+    "start":    55,
+    "end":      80,
+    "calls":    ["EMPLOYEES"],
+    "called_by": []
+  },
+  "HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED": {
+    "key":      "HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED",
+    "type":     "trigger",
+    "file":     "source/ts-plsql-oracle-forms-hrms/HRMS_EMPLOYEE.frmxml",
+    "form":     "HRMS_EMPLOYEE",
+    "block":    "EMPLOYEES",
+    "item":     "EMP_ID",
+    "trigger":  "WHEN_BUTTON_PRESSED",
+    "start":    310,
+    "end":      325,
+    "calls":    ["PKG_EMPLOYEE.HIRE_EMPLOYEE"],
+    "called_by": []
+  },
+  "PUBLIC.EMPLOYEES": {
+    "key":      "PUBLIC.EMPLOYEES",
+    "type":     "table",
+    "file":     "source/ts-plsql-oracle-forms-hrms/schema/01_core_tables.sql",
+    "schema":   "PUBLIC",
+    "name":     "EMPLOYEES",
+    "columns":  ["EMP_ID", "FIRST_NAME", "LAST_NAME", "HIRE_DATE", "SALARY", "DEPT_ID"],
+    "start":    10,
+    "end":      25,
+    "calls":    [],
+    "called_by": ["PKG_EMPLOYEE.HIRE_EMPLOYEE", "PKG_EMPLOYEE.TERMINATE_EMPLOYEE"]
+  }
+}
+```
+
+**Rules:**
+- Key is always the fully-qualified symbol key from Section 4.3
+- `calls` = what this symbol calls or reads
+- `called_by` = what calls this symbol (populated in second pass after all symbols indexed)
+- `start`/`end` are 0-based line numbers
+- Spec entries get `.spec` suffix, body entries do not
+
+---
+
+### Spec 2 — DEPENDENCY_GRAPH.json exact schema
+
+Four graphs in one file:
+
+```json
+{
+  "call_graph": {
+    "PKG_EMPLOYEE.HIRE_EMPLOYEE": ["PKG_EMPLOYEE.VALIDATE_DEPT", "PKG_EMPLOYEE.LOG_HISTORY"],
+    "PKG_EMPLOYEE.VALIDATE_DEPT": ["PUBLIC.DEPARTMENTS"]
+  },
+  "table_graph": {
+    "PKG_EMPLOYEE.HIRE_EMPLOYEE": ["PUBLIC.EMPLOYEES", "PUBLIC.EMPLOYEE_HISTORY"],
+    "PKG_EMPLOYEE.TERMINATE_EMPLOYEE": ["PUBLIC.EMPLOYEES", "PUBLIC.EMPLOYEE_HISTORY"]
+  },
+  "trigger_graph": {
+    "HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED": ["PKG_EMPLOYEE.HIRE_EMPLOYEE"]
+  },
+  "package_graph": {
+    "PKG_EMPLOYEE": ["PKG_PAYROLL", "PKG_AUDIT"],
+    "PKG_PAYROLL": ["PKG_EMPLOYEE"]
+  }
+}
+```
+
+**Rules:**
+- `call_graph` — procedure → procedures it calls directly (1 hop only)
+- `table_graph` — procedure → tables it reads or writes
+- `trigger_graph` — form trigger → procedures it calls
+- `package_graph` — package → packages it depends on (derived from call_graph)
+- All keys and values are symbol keys from SYMBOL_INDEX.json
+
+---
+
+### Spec 3 — Package context summary generation code
+
+Exact Python that builds the summary string from SYMBOL_INDEX.json — no AI, no file reading:
+
+```python
+def build_package_summary(package_name, symbol_index, max_names=20):
+    # Collect all body procedures for this package
+    procs = [
+        v for v in symbol_index.values()
+        if v.get("package") == package_name and v["type"] == "procedure"
+    ]
+    if not procs:
+        return ""
+
+    names = [p["name"] for p in procs]
+    shown = names[:max_names]
+    overflow = len(names) - max_names
+
+    # Shared tables — appear in 2+ procedures
+    from collections import Counter
+    all_tables = [c for p in procs for c in p.get("calls", [])
+                  if c.startswith("PUBLIC.") or "." not in c]
+    shared_tables = [t for t, n in Counter(all_tables).items() if n >= 2]
+
+    # Common calls — non-table symbols called by 2+ procedures
+    all_calls = [c for p in procs for c in p.get("calls", [])
+                 if not (c.startswith("PUBLIC.") or "." not in c)]
+    common_calls = [c.split(".")[-1] + "()" for c, n
+                    in Counter(all_calls).items() if n >= 2]
+
+    lines = [
+        f"=== PACKAGE CONTEXT: {package_name} ===",
+        f"Total procedures: {len(procs)}",
+        "  " + ", ".join(shown) + (f"\n  [+{overflow} more]" if overflow > 0 else ""),
+    ]
+    if shared_tables:
+        lines.append("Shared tables: " + ", ".join(shared_tables))
+    if common_calls:
+        lines.append("Common calls: " + ", ".join(common_calls[:5]))
+
+    return "\n".join(lines)
+```
+
+Called once per relevant package before each Turn 2 prompt. Output is ~150–200 tokens per package, capped by `max_names=20`.
+
+---
+
+### Spec 4 — run.py wiring — where Steps 2b and 2c are inserted
+
+Current `run.py` step order (simplified):
+```
+step_1_layer1_extraction()
+step_2_scan_once()
+step_3_scan_agent()
+steps_4_to_12_analysis_agents()
+step_13_foundation_synthesis()
+```
+
+v4 inserts after step_2, before step_3:
+```python
+# Step 2b — Symbol Index Builder
+from pipeline.symbol_index_builder import build_symbol_index
+symbol_index_path = output_dir / "SYMBOL_INDEX.json"
+if not symbol_index_path.exists():
+    build_symbol_index(source_dir, symbol_index_path)
+else:
+    print("  [Step 2b] SYMBOL_INDEX.json exists — skipping rebuild")
+
+# Step 2c — Dependency Graph Builder
+from pipeline.dependency_graph_builder import build_dependency_graph
+graph_path = output_dir / "DEPENDENCY_GRAPH.json"
+if not graph_path.exists():
+    build_dependency_graph(symbol_index_path, graph_path)
+else:
+    print("  [Step 2c] DEPENDENCY_GRAPH.json exists — skipping rebuild")
+```
+
+Resume-safe: skips if output already exists. Force-rebuild: delete the JSON files and re-run.
+
+---
+
+### Spec 5 — Bug #8 arch version stamp — exact startup code for run.py
+
+Add this at the top of `run.py` main(), before any steps run:
+
+```python
+ARCH_VERSION = "v4-symbol-index"
+arch_stamp = output_dir / "_arch_version.txt"
+
+if arch_stamp.exists():
+    existing = arch_stamp.read_text().strip()
+    if existing != ARCH_VERSION:
+        print(f"\n  ERROR: results/ was generated with architecture '{existing}'.")
+        print(f"  Current architecture is '{ARCH_VERSION}'.")
+        print(f"  Re-running will mix old and new output.")
+        print(f"  To force a clean re-run: delete results/ and re-run.")
+        print(f"  Or pass --force-rerun to override (at your own risk).")
+        if "--force-rerun" not in sys.argv:
+            sys.exit(1)
+
+# Write stamp for this run
+arch_stamp.write_text(ARCH_VERSION)
+```
+
+This runs before step 1. If old results exist from a different architecture, it stops and explains why. No silent mixing.
+
+---
+
+*Proposal v1: 2026-07-28 | v2: peer review fixes | v3: combined approach (3 new bugs) | v4: all bugs solved, build-ready specs added | Pipeline version: v2*
