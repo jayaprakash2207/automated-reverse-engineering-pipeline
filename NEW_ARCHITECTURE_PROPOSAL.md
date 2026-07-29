@@ -200,9 +200,9 @@ Step 2c — NEW: Dependency Graph Builder (no AI, pure Python)
         │  Reads SYMBOL_INDEX.json, builds 4 graphs
         │  Output: DEPENDENCY_GRAPH.json
         ▼
-Step 3  — Scan Agent (REVISIT after index works — may become redundant)
-        │  Currently: Claude re-extracts what SYMBOL_INDEX already has for free
-        │  Future: Step 3 replaced by SYMBOL_INDEX on large repos
+Step 3  — Scan Agent (REVISIT after index works — listing part reducible)
+        │  Currently: Claude re-extracts file/symbol listing that SYMBOL_INDEX has for free
+        │  Future: Skip listing pass only — keep business rule extraction
         ▼
 Steps 4–12 — Analysis Agents (BA, DA, TA, AA)
         │
@@ -253,26 +253,24 @@ The `--` comment now swallows `v_qty := 10;` — silently broken logic.
 # WRONG — strips everything including text nodes
 xml_string.replace('\n', '').replace('  ', '')
 
-# CORRECT — use xml.etree to minify only structural whitespace
-import xml.etree.ElementTree as ET
+# CORRECT — use lxml to preserve comments, namespaces, and CDATA
+from lxml import etree
 
 def minify_xml_structure(xml_path):
-    tree = ET.parse(xml_path)
-    # Only strip whitespace from tail/text that is pure whitespace
-    # Never touch text that contains actual content
-    for elem in tree.iter():
-        if elem.text and elem.text.strip() == '':
-            elem.text = None          # pure-whitespace text between tags → remove
-        elif elem.text:
-            pass                      # has real content → leave it completely alone
-        if elem.tail and elem.tail.strip() == '':
-            elem.tail = None
-    return ET.tostring(tree.getroot(), encoding='unicode')
+    parser = etree.XMLParser(remove_comments=False, remove_blank_text=True)
+    tree = etree.parse(xml_path, parser)
+    # remove_blank_text=True strips pure-whitespace structural nodes only
+    # Comments, namespaces, CDATA, and all text node content are preserved
+    result = etree.tostring(tree.getroot(), xml_declaration=True,
+                             encoding='unicode', pretty_print=False)
+    # Safety check: verify no text node content changed
+    # (run diff on original vs output before committing to pipeline)
+    return result
 ```
 
 **Saving:** 20–60% on structural overhead in `.frmxml`. Less on `.pllxml` (more text content).
-**Risk after fix:** Very low — only pure-whitespace nodes removed. Test on one `.pllxml` before rolling out.
-**Library:** Python `xml.etree.ElementTree` — no new dependency.
+**Risk after fix:** Very low — only pure-whitespace structural nodes removed. Test on one `.pllxml` before rolling out.
+**Library:** `lxml` — one new dependency (pip install lxml). Required to preserve comments and namespaces correctly (stdlib `xml.etree` silently drops both).
 
 ---
 
@@ -472,7 +470,7 @@ v4 costs slightly more than v2 (package summaries add ~150–200 tokens per pack
 
 | Phase | Before | **v4 combined** | Saving |
 |---|---|---|---|
-| Step 3 | ~$40–60 | ~$5–10 (or $0 if replaced by index) | ~80–100% |
+| Step 3 | ~$40–60 | ~$5–10 (listing pass skipped, rules kept) | ~75–85% |
 | Steps 4–12 | ~$20–30 | ~$7–12 | ~55–65% |
 | **Total** | **~$60–90** | **~$12–22** | **~70–80%** |
 
@@ -588,7 +586,7 @@ results/                                ← existing outputs untouched
 | Reverse eng cost (large repo) | ~$60–90 | ~$10–20 | **~$12–22** |
 | Baseline measurement needed? | — | Yes | **Yes — summary does not replace it** |
 | Code bugs blocking implementation | — | 8 open | **8 open (Section 12)** |
-| New dependencies | — | None | **None (stdlib only)** |
+| New dependencies | — | None | **`lxml` (for XML minifier only)** |
 | Implementation effort | — | — | **4–6 days (after bugs fixed)** |
 | Forward engineering affected | — | Not at all | **Not at all** |
 
