@@ -808,7 +808,7 @@ Every entry in the index is one symbol. The file is a JSON object keyed by symbo
     "name":     "HIRE_EMPLOYEE",
     "start":    142,
     "end":      198,
-    "calls":    ["PKG_EMPLOYEE.VALIDATE_DEPT", "PKG_EMPLOYEE.LOG_HISTORY", "EMPLOYEES"],
+    "calls":    ["PKG_EMPLOYEE.VALIDATE_DEPT", "PKG_EMPLOYEE.LOG_HISTORY", "PUBLIC.EMPLOYEES"],
     "called_by": ["HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED"]
   },
   "PKG_EMPLOYEE.HIRE_EMPLOYEE.spec": {
@@ -831,17 +831,18 @@ Every entry in the index is one symbol. The file is a JSON object keyed by symbo
     "param_count": 1,
     "start":    55,
     "end":      80,
-    "calls":    ["EMPLOYEES"],
+    "calls":    ["PUBLIC.EMPLOYEES"],
     "called_by": []
   },
   "HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED": {
     "key":      "HRMS_EMPLOYEE.EMPLOYEES.EMP_ID.WHEN_BUTTON_PRESSED",
-    "type":     "trigger",
+    "type":     "trigger_item",
     "file":     "source/ts-plsql-oracle-forms-hrms/HRMS_EMPLOYEE.frmxml",
     "form":     "HRMS_EMPLOYEE",
     "block":    "EMPLOYEES",
     "item":     "EMP_ID",
     "trigger":  "WHEN_BUTTON_PRESSED",
+    "body":     "PKG_EMPLOYEE.HIRE_EMPLOYEE(:EMP_ID);",
     "start":    310,
     "end":      325,
     "calls":    ["PKG_EMPLOYEE.HIRE_EMPLOYEE"],
@@ -864,10 +865,12 @@ Every entry in the index is one symbol. The file is a JSON object keyed by symbo
 
 **Rules:**
 - Key is always the fully-qualified symbol key from Section 4.3
-- `calls` = what this symbol calls or reads
-- `called_by` = what calls this symbol (populated in second pass after all symbols indexed)
+- `calls` = fully-qualified symbol keys this symbol calls or reads (never bare names)
+- `called_by` = fully-qualified keys that call this symbol (populated in third pass)
 - `start`/`end` are 0-based line numbers
 - Spec entries get `.spec` suffix, body entries do not
+- Trigger entries have a `body` field (raw text content) — procedures/tables do not
+- Trigger type is `trigger_item`, `trigger_block`, or `trigger_form` (not just `trigger`)
 
 ---
 
@@ -910,6 +913,7 @@ Exact Python that builds the summary string from SYMBOL_INDEX.json — no AI, no
 
 ```python
 def build_package_summary(package_name, symbol_index, max_names=20):
+    # symbol_index required to check type of each called symbol (table vs procedure)
     # Collect all body procedures for this package
     procs = [
         v for v in symbol_index.values()
@@ -922,15 +926,22 @@ def build_package_summary(package_name, symbol_index, max_names=20):
     shown = names[:max_names]
     overflow = len(names) - max_names
 
-    # Shared tables — appear in 2+ procedures
+    # Shared tables — calls[] entries whose symbol type is "table"
+    # After Spec 12 normalization, all table refs are full keys e.g. "PUBLIC.EMPLOYEES"
+    # Use symbol_index to check type — never rely on "." presence or schema prefix
     from collections import Counter
-    all_tables = [c for p in procs for c in p.get("calls", [])
-                  if c.startswith("PUBLIC.") or "." not in c]
+    all_tables = [
+        c for p in procs for c in p.get("calls", [])
+        if symbol_index.get(c, {}).get("type") == "table"
+    ]
     shared_tables = [t for t, n in Counter(all_tables).items() if n >= 2]
 
-    # Common calls — non-table symbols called by 2+ procedures
-    all_calls = [c for p in procs for c in p.get("calls", [])
-                 if not (c.startswith("PUBLIC.") or "." not in c)]
+    # Common calls — procedure/function calls (type != "table", not sentinel)
+    all_calls = [
+        c for p in procs for c in p.get("calls", [])
+        if c != "__DYNAMIC_SQL__"
+        and symbol_index.get(c, {}).get("type") != "table"
+    ]
     common_calls = [c.split(".")[-1] + "()" for c, n
                     in Counter(all_calls).items() if n >= 2]
 
@@ -1016,16 +1027,18 @@ This runs before step 1. If old results exist from a different architecture, it 
 
 ### Spec 6 — How `calls` is populated (procedure call + table reference detection)
 
-The parser runs a second scan over each procedure body after extracting its start/end lines. Two patterns to detect:
+The parser runs a second scan over each procedure body after extracting its start/end lines. Uses `table_lookup` from Spec 12 to normalize bare table names to full keys.
 
 ```python
 import re
 
-def extract_calls(body_lines, all_known_packages, all_known_tables):
+def extract_calls(body_lines, all_known_packages, table_lookup):
     """
-    body_lines: list of strings — the procedure body only (start..end)
-    all_known_packages: set of package names already indexed e.g. {"PKG_EMPLOYEE", "PKG_PAYROLL"}
-    all_known_tables: set of table names already indexed e.g. {"EMPLOYEES", "DEPARTMENTS"}
+    body_lines:         list of strings — the procedure body only (start..end)
+    all_known_packages: set of package names e.g. {"PKG_EMPLOYEE", "PKG_PAYROLL"}
+    table_lookup:       dict from Spec 12 — bare name → full key(s)
+                        e.g. {"EMPLOYEES": "PUBLIC.EMPLOYEES"}
+    Returns list of fully-qualified symbol keys.
     """
     calls = set()
 
@@ -1038,34 +1051,42 @@ def extract_calls(body_lines, all_known_packages, all_known_tables):
             if pkg in all_known_packages:
                 calls.add(f"{pkg}.{proc}")
 
-        # Pattern 2 — table reference: FROM / JOIN / INTO / UPDATE <table>
+        # Pattern 2 — all DML table references
         for m in re.finditer(
-            r'\b(?:FROM|JOIN|INTO|UPDATE)\s+([A-Z_][A-Z0-9_]*)', upper
+            r'\b(?:FROM|JOIN|INTO|UPDATE|DELETE\s+FROM|MERGE\s+INTO|'
+            r'OPEN\s+\w+\s+FOR\s+SELECT\s+\S+\s+FROM)\s+([A-Z_][A-Z0-9_]*)',
+            upper
         ):
             tbl = m.group(1)
-            if tbl in all_known_tables:
-                calls.add(tbl)
+            # Resolve bare name to full key using Spec 12 lookup
+            resolved = resolve_table_ref(tbl, table_lookup)
+            calls.update(resolved)
+
+        # Pattern 3 — dynamic SQL sentinel
+        if "EXECUTE IMMEDIATE" in upper:
+            calls.add("__DYNAMIC_SQL__")
 
     return sorted(calls)
 ```
 
-**Two-pass build order:**
+**Three-pass build order:**
 1. First pass — index all symbols (name, file, start, end, type) — `calls = []` for now
-2. Build `all_known_packages` and `all_known_tables` from first pass
+2. Build `table_lookup` using `build_table_lookup()` from Spec 12
 3. Second pass — for each symbol, read its body lines, run `extract_calls()`, populate `calls`
-4. Third pass — populate `called_by` (Spec 7 below)
+4. Third pass — populate `called_by` using `build_called_by()` from Spec 7
 
 ---
 
 ### Spec 7 — `called_by` second pass (exact code)
 
-After `calls` is populated for every symbol, derive `called_by` by inverting the call graph:
+After `calls` is populated for every symbol, derive `called_by` by inverting the call graph. Uses fully-qualified keys from Spec 6 — no bare names, no hardcoded schema:
 
 ```python
 def build_called_by(symbol_index):
     """
     Mutates symbol_index in place — adds called_by list to every entry.
     Run this AFTER extract_calls() has populated calls for all symbols.
+    calls[] entries are already fully-qualified keys (Spec 6 resolves them).
     """
     # Reset called_by for all symbols
     for entry in symbol_index.values():
@@ -1074,15 +1095,11 @@ def build_called_by(symbol_index):
     # Invert: for every A that calls B, add A to B's called_by
     for key, entry in symbol_index.items():
         for callee in entry.get("calls", []):
-            # callee may be a full key or just a table name
-            # Try exact match first, then prefix match
+            if callee == "__DYNAMIC_SQL__":
+                continue   # sentinel — skip
             if callee in symbol_index:
                 symbol_index[callee]["called_by"].append(key)
-            else:
-                # table reference — find the PUBLIC.TABLE entry
-                table_key = f"PUBLIC.{callee}"
-                if table_key in symbol_index:
-                    symbol_index[table_key]["called_by"].append(key)
+            # No fallback needed — Spec 6 already resolved all table refs to full keys
 
     return symbol_index
 ```
