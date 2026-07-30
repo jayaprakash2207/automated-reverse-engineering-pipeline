@@ -1,4 +1,4 @@
-<div align="center">
+<div align="center"> 
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=300&section=header&text=Automated%20Reverse%20%26%20Forward%20Engineering%20Pipeline&fontSize=34&fontColor=ffffff&fontAlignY=38&desc=Transform%20any%20legacy%20codebase%20into%2025%20architecture%20documents%20%2B%20working%20modern%20code%20—%20fully%20automated%20with%20Claude%20AI&descAlignY=60&descSize=14&animation=fadeIn" width="100%"/>
 
